@@ -1,25 +1,20 @@
 using MudBlazor;
 using SartainStudios.Client.Schema;
 using SartainStudios.Client.Service;
-using SartainStudios.Client.Service.Authentication;
 using SartainStudios.Schema.Billing;
 using SartainStudios.Schema.WorkSession;
 using BillingContractService = SartainStudios.Client.Service.BillingContract;
-using ClientService = SartainStudios.Client.Service.Client;
-using OrganizationService = SartainStudios.Client.Service.Organization;
-using ProjectService = SartainStudios.Client.Service.Project;
 
 namespace SartainStudios.Client.Page;
 
 public sealed partial class Dashboard(
     BillingContractService billingContractService,
     WorkSession workSessionService,
-    ClientService clientService,
-    ProjectService projectService,
-    OrganizationService organizationService,
-    TokenStore tokenStore,
+    OnboardingStatus onboardingStatusService,
     ISnackbar snackbar)
 {
+    private const string TutorialVideoUrl = "https://youtu.be/hswWOqx8Uu4";
+
     private List<Summary> ActiveContracts { get; set; } = [];
     private List<History> Sessions { get; set; } = [];
     private Dictionary<string, int> BaseProgressMinutesByContract { get; set; } = [];
@@ -28,8 +23,16 @@ public sealed partial class Dashboard(
     private DateTime BudgetLoadedAtUtc { get; set; } = DateTime.UtcNow;
     private string? ErrorMessage { get; set; }
     private bool IsBusy { get; set; }
-    private bool IsLoading { get; set; } = true;
+    private bool IsLoadingContracts { get; set; } = true;
+    private bool IsLoadingSessions { get; set; } = true;
+    private bool IsLoadingProgress { get; set; } = true;
+    private bool IsLoadingBudget { get; set; } = true;
+    private bool IsLoadingOnboarding { get; set; } = true;
     private OnboardingStatusResult? Onboarding { get; set; }
+
+    private Task<State>? InitialSessionStateTask { get; set; }
+
+    private int? LastAppliedElapsedMinutes { get; set; }
     private bool RequiresSetup => Onboarding?.HasBillingContract == false;
 
     private string NextSetupRoute => Onboarding switch
@@ -92,88 +95,182 @@ public sealed partial class Dashboard(
 
     private async Task LoadAsync()
     {
-        IsLoading = true;
+        IsLoadingContracts = true;
+        IsLoadingSessions = true;
+        IsLoadingProgress = true;
+        IsLoadingBudget = true;
+        IsLoadingOnboarding = true;
         ErrorMessage = null;
+        LastAppliedElapsedMinutes = null;
+
+        var (dayStart, dayEnd, weekStart, weekEnd) = GetLocalBudgetRanges();
+        InitialSessionStateTask = workSessionService.GetCurrentAsync();
+        ObserveFailure(InitialSessionStateTask);
+        var contractsTask = billingContractService.ListAsync();
+        var sessionsTask = workSessionService.ListAsync(take: 25);
+        var progressTask = workSessionService.GetProgressAsync();
+        var budgetTask = workSessionService.GetTimeBudgetAsync(dayStart, dayEnd, weekStart, weekEnd);
+        var onboardingTask = onboardingStatusService.GetAsync();
+
+        await Task.WhenAll(
+            ApplyContractsAsync(contractsTask),
+            ApplySessionsAsync(sessionsTask),
+            ApplyProgressAsync(progressTask),
+            ApplyBudgetAsync(budgetTask),
+            ApplyOnboardingAsync(onboardingTask));
+    }
+
+    private async Task RefreshSessionDataAsync()
+    {
+        IsLoadingSessions = true;
+        IsLoadingProgress = true;
+        IsLoadingBudget = true;
+        ErrorMessage = null;
+        LastAppliedElapsedMinutes = null;
+
+        var (dayStart, dayEnd, weekStart, weekEnd) = GetLocalBudgetRanges();
+        var sessionsTask = workSessionService.ListAsync(take: 25);
+        var progressTask = workSessionService.GetProgressAsync();
+        var budgetTask = workSessionService.GetTimeBudgetAsync(dayStart, dayEnd, weekStart, weekEnd);
+
+        await Task.WhenAll(
+            ApplySessionsAsync(sessionsTask),
+            ApplyProgressAsync(progressTask),
+            ApplyBudgetAsync(budgetTask));
+    }
+
+    private async Task ApplyContractsAsync(Task<IReadOnlyList<Summary>> contractsTask)
+    {
         try
         {
-            var (dayStart, dayEnd, weekStart, weekEnd) = GetLocalBudgetRanges();
-            var contractsTask = billingContractService.ListAsync();
-            var sessionsTask = workSessionService.ListAsync(take: 25);
-            var progressTask = workSessionService.GetProgressAsync();
-            var budgetTask = workSessionService.GetTimeBudgetAsync(dayStart, dayEnd, weekStart, weekEnd);
-            var onboardingTask = BuildOnboardingAsync(contractsTask, sessionsTask);
-            await Task.WhenAll(contractsTask, sessionsTask, progressTask, budgetTask, onboardingTask);
             var contracts = await contractsTask;
             ActiveContracts = contracts
                 .Where(contract => contract.IsActive)
                 .OrderBy(contract => contract.ProjectName)
                 .ToList();
+        }
+        catch (Exception ex)
+        {
+            ActiveContracts = [];
+            ReportError(ex);
+        }
+        finally
+        {
+            IsLoadingContracts = false;
+            BuildProgressItems();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ApplySessionsAsync(Task<IReadOnlyList<History>> sessionsTask)
+    {
+        try
+        {
             Sessions = (await sessionsTask).ToList();
+        }
+        catch (Exception ex)
+        {
+            Sessions = [];
+            ReportError(ex);
+        }
+        finally
+        {
+            IsLoadingSessions = false;
+            BuildProgressItems();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ApplyProgressAsync(Task<IReadOnlyList<Progress>> progressTask)
+    {
+        try
+        {
             BaseProgressMinutesByContract = (await progressTask)
                 .ToDictionary(item => item.ContractId, item => item.LoggedMinutes);
+        }
+        catch (Exception ex)
+        {
+            BaseProgressMinutesByContract = [];
+            ReportError(ex);
+        }
+        finally
+        {
+            IsLoadingProgress = false;
             BuildProgressItems();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ApplyBudgetAsync(Task<TimeBudget> budgetTask)
+    {
+        try
+        {
             Budget = await budgetTask;
             BudgetLoadedAtUtc = DateTime.UtcNow;
+        }
+        catch (Exception ex)
+        {
+            Budget = null;
+            ReportError(ex);
+        }
+        finally
+        {
+            IsLoadingBudget = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ApplyOnboardingAsync(Task<OnboardingStatusResult> onboardingTask)
+    {
+        try
+        {
             Onboarding = await onboardingTask;
         }
         catch (Exception ex)
         {
-            snackbar.Add(ex.Message, Severity.Error);
-            ErrorMessage = ex.Message;
-            ActiveContracts = [];
-            Sessions = [];
-            BaseProgressMinutesByContract = [];
-            ProgressItems = [];
-            Budget = null;
             Onboarding = null;
+            ReportError(ex);
         }
         finally
         {
-            IsLoading = false;
+            IsLoadingOnboarding = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
 
-    private async Task<OnboardingStatusResult> BuildOnboardingAsync(
-        Task<IReadOnlyList<Summary>> contractsTask,
-        Task<IReadOnlyList<History>> sessionsTask)
+    private void ReportError(Exception exception)
     {
-        var organizationCustomizedTask = GetOrganizationCustomizedAsync();
-        var clientsTask = clientService.ListAsync();
-        var projectsTask = projectService.ListAsync();
-        await Task.WhenAll(organizationCustomizedTask, clientsTask, projectsTask, contractsTask, sessionsTask);
-        return new OnboardingStatusResult(
-            await organizationCustomizedTask,
-            (await clientsTask).Count > 0,
-            (await projectsTask).Count > 0,
-            (await contractsTask).Count > 0,
-            (await sessionsTask).Count > 0,
-            false);
+        if (ErrorMessage == exception.Message)
+            return;
+        ErrorMessage = exception.Message;
+        snackbar.Add(exception.Message, Severity.Error);
     }
 
-    private async Task<bool> GetOrganizationCustomizedAsync()
+    private static void ObserveFailure(Task task)
     {
-        var session = await tokenStore.LoadAsync();
-        if (string.IsNullOrWhiteSpace(session?.OrganizationId))
-            return false;
-        try
-        {
-            var organization = await organizationService.GetAsync(session.OrganizationId);
-            var hasAddress = organization.Address?.HasValue ?? false;
-            var hasPhoneNumber = !string.IsNullOrWhiteSpace(organization.PhoneNumber);
-            return hasAddress && hasPhoneNumber;
-        }
-        catch
-        {
-            return false;
-        }
+        _ = task.ContinueWith(
+            completed => _ = completed.Exception,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 
     private Task HandleElapsedChanged(TimeSpan elapsed)
     {
+        var elapsedMinutes = Math.Max(0, (int)elapsed.TotalMinutes);
+
+        if (elapsedMinutes == LastAppliedElapsedMinutes)
+            return Task.CompletedTask;
+
         var index = Sessions.FindIndex(session => session.IsRunning);
         if (index < 0)
+        {
+            LastAppliedElapsedMinutes = null;
             return Task.CompletedTask;
-        Sessions[index] = Sessions[index] with { ElapsedMinutes = Math.Max(0, (int)elapsed.TotalMinutes) };
+        }
+
+        LastAppliedElapsedMinutes = elapsedMinutes;
+        Sessions[index] = Sessions[index] with { ElapsedMinutes = elapsedMinutes };
         BuildProgressItems();
         return InvokeAsync(StateHasChanged);
     }
@@ -187,7 +284,7 @@ public sealed partial class Dashboard(
         {
             snackbar.Add("Discarding...", Severity.Info);
             await workSessionService.DiscardAsync(session.SessionId);
-            await LoadAsync();
+            await RefreshSessionDataAsync();
             snackbar.Add("Session discarded.", Severity.Success);
         }
         catch (Exception ex)

@@ -30,13 +30,14 @@ public sealed class OrganizationServiceTests
         CurrentTenant? tenant = null,
         TimeProvider? timeProvider = null)
     {
+        var resolvedTimeProvider = timeProvider ?? new StaticTimeProvider(DateTimeOffset.UtcNow);
         return new OrganizationService(
             harness.Database,
             tenant ?? TestTenant.Create(ObjectId.GenerateNewId(), ObjectId.GenerateNewId()),
             new Lookup(harness.Database),
             new Provisioning(harness.Database),
-            new Session(harness.Database, CreateToken()),
-            timeProvider ?? new StaticTimeProvider(DateTimeOffset.UtcNow));
+            new Session(harness.Database, CreateToken(), resolvedTimeProvider),
+            resolvedTimeProvider);
     }
 
     private static Token CreateToken()

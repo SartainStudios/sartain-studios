@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
+using SartainStudios.Client.Service.Caching;
 using CreateInput = SartainStudios.Client.Component.ProjectCreateDialog.CreateInput;
 using CreateRequest = SartainStudios.Schema.Project.CreateRequest;
 using ProjectSummary = SartainStudios.Schema.Project.Summary;
@@ -15,13 +16,15 @@ namespace SartainStudios.Client.Page;
 public sealed partial class Projects(
     ProjectService projectService,
     ClientService clientService,
+    DataCache cache,
     AuthenticationStateProvider authenticationStateProvider,
     NavigationManager navigationManager,
-    ISnackbar snackbar)
+    ISnackbar snackbar) : IDisposable
 {
     private static readonly string[] Statuses = ["Active", "Archived"];
     private bool _createRequestHandled;
     private string? _lastId;
+    private Task? _clientsLoad;
 
     [Parameter]
     [SupplyParameterFromQuery(Name = "id")]
@@ -51,55 +54,96 @@ public sealed partial class Projects(
     private bool CanManage { get; set; }
     private bool IsDetailView => !string.IsNullOrEmpty(Id);
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync()
     {
-        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
-        var role = authState.User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
-        CanManage = role is "Owner" or "Admin";
         _lastId = Id;
-        IsEditMode = EditRequested && CanManage;
-        if (!string.IsNullOrEmpty(Id))
-            await LoadProjectAsync();
-        else
-            await LoadProjectsAsync();
-        if (CanManage && (IsEditMode || CreateRequested))
-            await EnsureClientsLoadedAsync();
+        cache.Changed += OnCacheChanged;
+
+        var projectTask = string.IsNullOrEmpty(Id) ? LoadProjectsAsync() : LoadProjectAsync();
+        var clientsTask = EditRequested || CreateRequested ? EnsureClientsLoadedAsync() : Task.CompletedTask;
+        var authTask = LoadAuthorizationAsync();
+
+        return Task.WhenAll(projectTask, clientsTask, authTask);
     }
 
-    protected override async Task OnParametersSetAsync()
+    public void Dispose()
     {
+        cache.Changed -= OnCacheChanged;
+    }
+
+    private void OnCacheChanged(string key)
+    {
+        var isRelevant = key == CacheKeys.ClientList
+                         || (string.IsNullOrEmpty(Id) ? key == CacheKeys.ProjectList : key == CacheKeys.Project(Id));
+        if (!isRelevant) return;
+        _ = InvokeAsync(ApplyBackgroundRefreshAsync);
+    }
+
+    private async Task ApplyBackgroundRefreshAsync()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(Id))
+            {
+                ProjectSummaries = (await projectService.ListAsync()).ToList();
+            }
+            else
+            {
+                SelectedProject = await projectService.GetAsync(Id);
+                if (!IsEditMode) PopulateEditFields(SelectedProject);
+            }
+
+            if (_clientsLoad is not null) Clients = (await clientService.ListAsync()).ToList();
+
+            StateHasChanged();
+        }
+        catch
+        {
+            // The already rendered data stays on screen when a background refresh cannot be applied.
+        }
+    }
+
+    protected override Task OnParametersSetAsync()
+    {
+        var prevEditMode = IsEditMode;
+        IsEditMode = EditRequested && CanManage;
+        if (prevEditMode && !IsEditMode && SelectedProject is not null)
+            PopulateEditFields(SelectedProject);
+
+        var projectTask = Task.CompletedTask;
+        if (Id != _lastId)
+        {
+            _lastId = Id;
+            ErrorMessage = null;
+            SelectedProject = null;
+            projectTask = string.IsNullOrEmpty(Id) ? LoadProjectsAsync() : LoadProjectAsync();
+        }
+
+        var clientsTask = Task.CompletedTask;
         if (CreateRequested && !_createRequestHandled)
         {
             _createRequestHandled = true;
-            await OpenCreateAsync();
+            ShowCreate = true;
+            clientsTask = EnsureClientsLoadedAsync();
         }
         else if (!CreateRequested)
         {
             _createRequestHandled = false;
         }
 
-        var prevEditMode = IsEditMode;
-        IsEditMode = EditRequested && CanManage;
-        if (prevEditMode && !IsEditMode && SelectedProject is not null)
-            PopulateEditFields(SelectedProject);
-        if (Id != _lastId)
-        {
-            _lastId = Id;
-            ErrorMessage = null;
-            if (!string.IsNullOrEmpty(Id))
-            {
-                SelectedProject = null;
-                await LoadProjectAsync();
-            }
-            else
-            {
-                SelectedProject = null;
-                await LoadProjectsAsync();
-            }
-        }
+        if (CanManage && IsEditMode && ReferenceEquals(clientsTask, Task.CompletedTask))
+            clientsTask = EnsureClientsLoadedAsync();
 
-        if (CanManage && IsEditMode)
-            await EnsureClientsLoadedAsync();
+        return Task.WhenAll(projectTask, clientsTask);
+    }
+
+    private async Task LoadAuthorizationAsync()
+    {
+        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+        var role = authState.User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
+        CanManage = role is "Owner" or "Admin";
+        IsEditMode = EditRequested && CanManage;
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadProjectsAsync()
@@ -114,6 +158,10 @@ public sealed partial class Projects(
             snackbar.Add(ex.Message, Severity.Error);
             ErrorMessage = ex.Message;
             ProjectSummaries = [];
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -134,13 +182,17 @@ public sealed partial class Projects(
         finally
         {
             IsLoading = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
 
-    private async Task EnsureClientsLoadedAsync()
+    private Task EnsureClientsLoadedAsync()
     {
-        if (Clients.Count > 0)
-            return;
+        return _clientsLoad ??= LoadClientsAsync();
+    }
+
+    private async Task LoadClientsAsync()
+    {
         try
         {
             Clients = (await clientService.ListAsync()).ToList();
@@ -150,6 +202,11 @@ public sealed partial class Projects(
             snackbar.Add(ex.Message, Severity.Error);
             ErrorMessage = ex.Message;
             Clients = [];
+            _clientsLoad = null;
+        }
+        finally
+        {
+            await InvokeAsync(StateHasChanged);
         }
     }
 
@@ -161,15 +218,10 @@ public sealed partial class Projects(
         Status = project.Status;
     }
 
-    private async Task OpenCreateAsync()
-    {
-        await EnsureClientsLoadedAsync();
-        ShowCreate = true;
-    }
-
     private void OpenCreate()
     {
-        _ = OpenCreateAsync();
+        ShowCreate = true;
+        _ = EnsureClientsLoadedAsync();
     }
 
     private Task OnCreateDialogVisibleChangedAsync(bool visible)

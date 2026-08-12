@@ -163,11 +163,11 @@
                                 </MudStack>
                             </MudPaper>
                         }
-                        @if (Rows is null)
+                        @if (IsMembersLoading)
                         {
                             <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="4" Columns="4"/>
                         }
-                        else if (Rows.Count == 0)
+                        else if (Rows is null || Rows.Count == 0)
                         {
                             <MudStack Spacing="2" AlignItems="AlignItems.Center" Class="py-6">
                                 <MudIcon Icon="@Icons.Material.Filled.GroupOff" Color="Color.Secondary"

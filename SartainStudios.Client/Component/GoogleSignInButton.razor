@@ -1,8 +1,31 @@
 @namespace SartainStudios.Client.Component
 <MudStack Spacing="2">
-    <div id="@ElementId"></div>
+    @if (UseRedirectFlow)
+    {
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Default"
+                   Size="Size.Large"
+                   FullWidth="true"
+                   Disabled="IsBusy"
+                   StartIcon="@Icons.Custom.Brands.Google"
+                   OnClick="StartRedirectAsync"
+                   Style="text-transform: none; height: 44px; border-radius: 4px;">
+            @(IsBusy ? "Redirecting to Google..." : "Continue with Google")
+        </MudButton>
+    }
+    else
+    {
+        <div id="@ElementId"></div>
+    }
     @if (!string.IsNullOrEmpty(ErrorMessage))
     {
         <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
     }
 </MudStack>
+
+<MudOverlay Visible="IsBusy" DarkBackground="true" ZIndex="9999">
+    <MudStack AlignItems="AlignItems.Center" Spacing="4">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
+        <MudText Typo="Typo.h6" Align="Align.Center" Style="color: #FFFFFF;">@BusyMessage</MudText>
+    </MudStack>
+</MudOverlay>

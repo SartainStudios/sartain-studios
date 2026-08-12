@@ -25,6 +25,7 @@ public sealed partial class Organizations(
     private const string StatusActive = "Active";
     private const string StatusInvited = "Invited";
     private const string StatusSuspended = "Suspended";
+
     private bool _createRequestHandled;
 
     [Parameter]
@@ -36,9 +37,11 @@ public sealed partial class Organizations(
     public bool CreateRequested { get; set; }
 
     private MudForm EditForm { get; set; } = null!;
+
     private List<OrganizationSummary>? OrganizationSummaries { get; set; }
     private OrganizationSummary? ActiveOrganization { get; set; }
     private List<Summary>? Rows { get; set; }
+
     private bool HasOrganizations => OrganizationSummaries is { Count: > 0 };
     private bool CanSwitchOrganizations => SelectableOrganizations.Count > 1;
 
@@ -66,6 +69,7 @@ public sealed partial class Organizations(
     private string? ErrorMessage { get; set; }
     private bool IsBusy { get; set; }
     private bool IsLoading { get; set; } = true;
+    private bool IsMembersLoading { get; set; } = true;
 
     private bool CanEdit => string.Equals(ActiveOrganization?.Role, OwnerRole, StringComparison.OrdinalIgnoreCase);
     private bool IsOwner => string.Equals(CurrentRole, OwnerRole, StringComparison.OrdinalIgnoreCase);
@@ -73,7 +77,7 @@ public sealed partial class Organizations(
     private bool CanInvite => IsOwner || IsAdmin;
 
     private IEnumerable<string> AvailableInviteRoles =>
-        IsOwner ? Enum.GetNames<RoleType>() : new[] { AdminRole, MemberRole };
+        IsOwner ? Enum.GetNames<RoleType>() : [AdminRole, MemberRole];
 
     protected override async Task OnInitializedAsync()
     {
@@ -94,48 +98,124 @@ public sealed partial class Organizations(
     private async Task LoadAsync()
     {
         IsLoading = true;
+        IsMembersLoading = true;
         ErrorMessage = null;
+        Rows = null;
+
+        string? organizationId;
         try
         {
             var state = await authenticationStateProvider.GetAuthenticationStateAsync();
             CurrentRole = state.User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
             CurrentUserId = state.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value ?? string.Empty;
-            var organizationId = state.User.FindFirst("organizationId")?.Value;
+            organizationId = state.User.FindFirst("organizationId")?.Value;
+        }
+        catch (Exception ex)
+        {
+            ReportError(ex);
+            IsLoading = false;
+            IsMembersLoading = false;
+            return;
+        }
 
+        var organizationsTask = LoadOrganizationsAsync();
+        var activeOrganizationTask = LoadActiveOrganizationAsync(organizationId);
+        var membersTask = LoadMembersAsync(organizationId);
+
+        if (string.IsNullOrWhiteSpace(organizationId))
+            await organizationsTask;
+        else
+            await activeOrganizationTask;
+
+        IsLoading = false;
+        StateHasChanged();
+
+        await Task.WhenAll(organizationsTask, activeOrganizationTask, membersTask);
+    }
+
+    private async Task LoadOrganizationsAsync()
+    {
+        try
+        {
             var list = await service.ListMineAsync();
             OrganizationSummaries = list.ToList();
+        }
+        catch (Exception ex)
+        {
+            OrganizationSummaries ??= [];
+            ReportError(ex);
+        }
+        finally
+        {
+            if (!IsLoading) StateHasChanged();
+        }
+    }
 
-            if (string.IsNullOrWhiteSpace(organizationId))
-            {
-                ActiveOrganization = null;
-                SelectedOrganizationId = null;
-                Rows = null;
-                Name = string.Empty;
-                Email = string.Empty;
-                Address = new Address();
-                PhoneNumber = string.Empty;
-                return;
-            }
+    private async Task LoadActiveOrganizationAsync(string? organizationId)
+    {
+        if (string.IsNullOrWhiteSpace(organizationId))
+        {
+            ActiveOrganization = null;
+            SelectedOrganizationId = null;
+            Name = string.Empty;
+            Email = string.Empty;
+            Address = new Address();
+            PhoneNumber = string.Empty;
+            return;
+        }
 
-            ActiveOrganization = await service.GetAsync(organizationId);
-            SelectedOrganizationId = ActiveOrganization.Id;
-            Name = ActiveOrganization.Name;
-            Email = ActiveOrganization.Email;
-            Address = ActiveOrganization.Address ?? new Address();
-            PhoneNumber = ActiveOrganization.PhoneNumber ?? string.Empty;
+        try
+        {
+            var organization = await service.GetAsync(organizationId);
+            ActiveOrganization = organization;
+            SelectedOrganizationId = organization.Id;
+            Name = organization.Name;
+            Email = organization.Email;
+            Address = organization.Address ?? new Address();
+            PhoneNumber = organization.PhoneNumber ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            ActiveOrganization = null;
+            SelectedOrganizationId = null;
+            ReportError(ex);
+        }
+        finally
+        {
+            if (!IsLoading) StateHasChanged();
+        }
+    }
 
+    private async Task LoadMembersAsync(string? organizationId)
+    {
+        if (string.IsNullOrWhiteSpace(organizationId))
+        {
+            Rows = null;
+            IsMembersLoading = false;
+            return;
+        }
+
+        try
+        {
             var memberships = await membershipService.ListAsync();
             Rows = memberships.ToList();
         }
         catch (Exception ex)
         {
-            snackbar.Add(ex.Message, Severity.Error);
-            ErrorMessage = ex.Message;
+            Rows = null;
+            ReportError(ex);
         }
         finally
         {
-            IsLoading = false;
+            IsMembersLoading = false;
+            if (!IsLoading) StateHasChanged();
         }
+    }
+
+    private void ReportError(Exception exception)
+    {
+        snackbar.Add(exception.Message, Severity.Error);
+        ErrorMessage = exception.Message;
     }
 
     private void OpenCreate()
@@ -237,7 +317,8 @@ public sealed partial class Organizations(
             snackbar.Add($"Invitation sent to {InviteEmail}.", Severity.Success);
             InviteEmail = string.Empty;
             InviteRole = MemberRole;
-            await LoadAsync();
+            IsMembersLoading = true;
+            await LoadMembersAsync(ActiveOrganization?.Id);
         }
         catch (Exception ex)
         {

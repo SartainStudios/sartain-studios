@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
 using SartainStudios.Client.Service.Authentication;
 using SartainStudios.Schema.Authentication;
@@ -8,6 +9,7 @@ namespace SartainStudios.Client.Page;
 
 public sealed partial class SignIn(
     Authentication authentication,
+    AuthenticationStateProvider authenticationStateProvider,
     NavigationManager navigationManager,
     ISnackbar snackbar)
 {
@@ -16,6 +18,8 @@ public sealed partial class SignIn(
     private string? ErrorMessage { get; set; }
     private Dictionary<string, string[]> FieldErrors { get; set; } = [];
     private bool IsBusy { get; set; }
+    private bool IsGoogleBusy { get; set; }
+    private string BusyMessage { get; set; } = "Signing you in...";
 
     private string ReturnUrl
     {
@@ -32,6 +36,13 @@ public sealed partial class SignIn(
         return FieldErrors.TryGetValue(field, out var messages) ? string.Join(" ", messages) : null;
     }
 
+    private Task OnGoogleBusyChanged(bool isBusy)
+    {
+        IsGoogleBusy = isBusy;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
     private async Task SubmitAsync()
     {
         ErrorMessage = null;
@@ -43,24 +54,27 @@ public sealed partial class SignIn(
             return;
         }
 
+        BusyMessage = "Signing you in...";
         IsBusy = true;
         try
         {
             await ContinueAsync();
-            navigationManager.NavigateTo(ReturnUrl);
+
+            await authenticationStateProvider.GetAuthenticationStateAsync();
+            BusyMessage = "Taking you to your dashboard...";
+            StateHasChanged();
+            navigationManager.NavigateTo(ReturnUrl, false, true);
         }
         catch (ApiException exception)
         {
+            IsBusy = false;
             HandleFailure(exception);
         }
         catch (Exception exception)
         {
+            IsBusy = false;
             ErrorMessage = exception.Message;
             snackbar.Add(ErrorMessage, Severity.Error);
-        }
-        finally
-        {
-            IsBusy = false;
         }
     }
 
@@ -74,7 +88,8 @@ public sealed partial class SignIn(
         {
             try
             {
-                snackbar.Add("Creating your account...", Severity.Info);
+                BusyMessage = "Creating your account...";
+                StateHasChanged();
                 await authentication.RegisterAsync(
                     new EmailRegisterRequest(Email, Password, null, null, null, null, null));
             }

@@ -674,7 +674,7 @@ public sealed class AuthenticationServiceTests
         var timeProvider = new StaticTimeProvider(now);
         var token = new Token(JwtSettings);
         var password = new Password(harness.Database);
-        var session = new Session(harness.Database, token);
+        var session = new Session(harness.Database, token, timeProvider);
         var provisioning = new Provisioning(harness.Database);
         var tenant = currentTenant ?? TestTenant.Anonymous();
         var service = new AuthenticationService(

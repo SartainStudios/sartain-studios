@@ -18,6 +18,7 @@ public partial class MainAppBar(
     ISnackbar snackbar) : ComponentBase, IDisposable
 {
     [Parameter] public EventCallback OnDrawerToggle { get; set; }
+
     private string? CurrentOrganizationId { get; set; }
     private string? CurrentOrganizationName { get; set; }
     private List<OrganizationSummary>? OtherOrganizations { get; set; }
@@ -75,6 +76,7 @@ public partial class MainAppBar(
         CurrentOrganizationName = string.IsNullOrWhiteSpace(session.OrganizationName)
             ? "Organization"
             : session.OrganizationName;
+
         IsLoadingOrganizations = true;
         StateHasChanged();
         try
@@ -97,24 +99,10 @@ public partial class MainAppBar(
         }
     }
 
-    private async Task SwitchAsync(string organizationId)
-    {
-        try
-        {
-            snackbar.Add("Switching organizations...", Severity.Info);
-            await organizationClient.SwitchAsync(organizationId);
-            navigationManager.NavigateTo(navigationManager.Uri, true);
-        }
-        catch
-        {
-            snackbar.Add("Failed to switch organizations.", Severity.Error);
-        }
-    }
-
     private async Task SignOutAsync()
     {
         await authentication.SignOutAsync();
         snackbar.Add("Signed out.", Severity.Success);
-        navigationManager.NavigateTo(Metadata.Home.IndexRoute, false);
+        navigationManager.NavigateTo(Metadata.MainMenu.IndexRoute, false);
     }
 }

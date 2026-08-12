@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
 using SartainStudios.Client.Service.Validation;
+using SartainStudios.Client.Service.Caching;
 using SartainStudios.Schema.Billing;
 using SartainStudios.Schema.Membership;
 using CreateInput = SartainStudios.Client.Component.BillingContractCreateDialog.CreateInput;
@@ -18,15 +19,17 @@ namespace SartainStudios.Client.Page;
 public sealed partial class BillingContracts(
     BillingContractService billingContractService,
     ProjectService projectService,
+    DataCache cache,
     AuthenticationStateProvider authenticationStateProvider,
     NavigationManager navigationManager,
-    ISnackbar snackbar)
+    ISnackbar snackbar) : IDisposable
 {
     private const string OwnerRole = nameof(RoleType.Owner);
     private const string AdminRole = nameof(RoleType.Administrator);
     private static readonly string[] BillingCycles = Enum.GetNames<Cycle>();
     private bool _createRequestHandled;
     private string? _lastId;
+    private Task? _projectsLoad;
 
     [Parameter]
     [SupplyParameterFromQuery(Name = "id")]
@@ -65,15 +68,58 @@ public sealed partial class BillingContracts(
 
     protected override async Task OnInitializedAsync()
     {
+        _lastId = Id;
+        cache.Changed += OnCacheChanged;
+
+        var contractTask = string.IsNullOrEmpty(Id) ? LoadContractsAsync() : LoadContractAsync();
+
         var state = await authenticationStateProvider.GetAuthenticationStateAsync();
         CurrentRole = state.User.FindFirst(ClaimTypes.Role)?.Value ?? "";
-        _lastId = Id;
         IsEditMode = EditRequested && CanManage;
-        await LoadProjectsAsync();
-        if (!string.IsNullOrEmpty(Id))
-            await LoadContractAsync();
-        else
-            await LoadContractsAsync();
+
+        if (IsEditMode)
+            _ = EnsureProjectsAsync();
+
+        await contractTask;
+    }
+
+    public void Dispose()
+    {
+        cache.Changed -= OnCacheChanged;
+    }
+
+    private void OnCacheChanged(string key)
+    {
+        var isRelevant = key == CacheKeys.ProjectList
+                         || (string.IsNullOrEmpty(Id)
+                             ? key == CacheKeys.BillingContractList(null)
+                             : key == CacheKeys.BillingContract(Id));
+        if (!isRelevant) return;
+        _ = InvokeAsync(ApplyBackgroundRefreshAsync);
+    }
+
+    private async Task ApplyBackgroundRefreshAsync()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(Id))
+            {
+                Contracts = (await billingContractService.ListAsync()).ToList();
+            }
+            else
+            {
+                SelectedContract = await billingContractService.GetAsync(Id);
+                if (!IsEditMode) PopulateEditFields(SelectedContract);
+            }
+
+            if (_projectsLoad is not null) Projects = (await projectService.ListAsync()).ToList();
+
+            StateHasChanged();
+        }
+        catch
+        {
+            // The already rendered data stays on screen when a background refresh cannot be applied.
+        }
     }
 
     protected override async Task OnParametersSetAsync()
@@ -81,7 +127,7 @@ public sealed partial class BillingContracts(
         if (CreateRequested && !_createRequestHandled)
         {
             _createRequestHandled = true;
-            OpenCreate();
+            await OpenCreateAsync();
         }
         else if (!CreateRequested)
         {
@@ -90,6 +136,8 @@ public sealed partial class BillingContracts(
 
         var previousEditMode = IsEditMode;
         IsEditMode = EditRequested && CanManage;
+        if (IsEditMode && !previousEditMode)
+            await EnsureProjectsAsync();
         if (previousEditMode && !IsEditMode && SelectedContract is not null)
             PopulateEditFields(SelectedContract);
         if (Id == _lastId) return;
@@ -102,6 +150,17 @@ public sealed partial class BillingContracts(
             await LoadContractsAsync();
     }
 
+    private Task EnsureProjectsAsync()
+    {
+        return _projectsLoad ??= LoadProjectsAndRenderAsync();
+    }
+
+    private async Task LoadProjectsAndRenderAsync()
+    {
+        await LoadProjectsAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
     private async Task LoadProjectsAsync()
     {
         try
@@ -111,7 +170,6 @@ public sealed partial class BillingContracts(
         catch (Exception exception)
         {
             snackbar.Add(exception.Message, Severity.Error);
-            ErrorMessage = exception.Message;
             Projects = [];
         }
     }
@@ -162,9 +220,10 @@ public sealed partial class BillingContracts(
         IsActive = contract.IsActive;
     }
 
-    private void OpenCreate()
+    private async Task OpenCreateAsync()
     {
         ShowCreate = true;
+        await EnsureProjectsAsync();
     }
 
     private Task OnCreateDialogVisibleChangedAsync(bool visible)

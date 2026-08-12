@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
+using SartainStudios.Client.Service.Caching;
 using SartainStudios.Schema;
 using SartainStudios.Schema.Client;
 using CreateInput = SartainStudios.Client.Component.ClientCreateDialog.CreateInput;
@@ -13,9 +14,10 @@ namespace SartainStudios.Client.Page;
 public sealed partial class Clients(
     ClientService clientService,
     InvoiceService invoiceService,
+    DataCache cache,
     AuthenticationStateProvider authenticationStateProvider,
     NavigationManager navigationManager,
-    ISnackbar snackbar)
+    ISnackbar snackbar) : IDisposable
 {
     private bool _createRequestHandled;
     private string? _lastId;
@@ -53,15 +55,53 @@ public sealed partial class Clients(
 
     protected override async Task OnInitializedAsync()
     {
+        _lastId = Id;
+        cache.Changed += OnCacheChanged;
+
+        var dataTask = string.IsNullOrEmpty(Id) ? LoadClientsAsync() : LoadClientAsync();
+
         var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
         var role = authState.User.FindFirst(ClaimTypes.Role)?.Value ?? "";
         CanManage = role is "Owner" or "Admin";
-        _lastId = Id;
         IsEditMode = EditRequested && CanManage;
-        if (!string.IsNullOrEmpty(Id))
-            await LoadClientAsync();
-        else
-            await LoadClientsAsync();
+
+        await dataTask;
+    }
+
+    public void Dispose()
+    {
+        cache.Changed -= OnCacheChanged;
+    }
+
+    private void OnCacheChanged(string key)
+    {
+        var isRelevant = string.IsNullOrEmpty(Id)
+            ? key == CacheKeys.ClientList
+            : key == CacheKeys.Client(Id);
+        if (!isRelevant) return;
+        _ = InvokeAsync(ApplyBackgroundRefreshAsync);
+    }
+
+    private async Task ApplyBackgroundRefreshAsync()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(Id))
+            {
+                ClientSummaries = (await clientService.ListAsync()).ToList();
+            }
+            else
+            {
+                SelectedClient = await clientService.GetAsync(Id);
+                if (!IsEditMode) PopulateEditFields(SelectedClient);
+            }
+
+            StateHasChanged();
+        }
+        catch
+        {
+            // The already rendered data stays on screen when a background refresh cannot be applied.
+        }
     }
 
     protected override async Task OnParametersSetAsync()
@@ -119,34 +159,50 @@ public sealed partial class Clients(
         IsLoading = true;
         IsLoadingInvoices = true;
         ErrorMessage = null;
+
+        var id = Id!;
+
+        var clientTask = clientService.GetAsync(id);
+        var invoicesTask = invoiceService.ListAsync(id);
+
+        await Task.WhenAll(ApplyClientAsync(clientTask), ApplyInvoicesAsync(invoicesTask));
+    }
+
+    private async Task ApplyClientAsync(Task<Summary> clientTask)
+    {
         try
         {
-            SelectedClient = await clientService.GetAsync(Id!);
+            SelectedClient = await clientTask;
             PopulateEditFields(SelectedClient);
         }
         catch (Exception ex)
         {
             snackbar.Add(ex.Message, Severity.Error);
             ErrorMessage = ex.Message;
-            return;
         }
         finally
         {
             IsLoading = false;
+            await InvokeAsync(StateHasChanged);
         }
+    }
 
+    private async Task ApplyInvoicesAsync(Task<IReadOnlyList<SartainStudios.Schema.Invoice.Summary>> invoicesTask)
+    {
         try
         {
-            Invoices = (await invoiceService.ListAsync(Id!)).ToList();
+            Invoices = (await invoicesTask).ToList();
         }
         catch (Exception ex)
         {
+            Invoices = [];
             snackbar.Add(ex.Message, Severity.Error);
             ErrorMessage = ex.Message;
         }
         finally
         {
             IsLoadingInvoices = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
 

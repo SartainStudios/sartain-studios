@@ -85,7 +85,9 @@
                                 <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="ClearSelection">Clear
                                 </MudButton>
                             </MudStack>
-                            <MudTable T="SelectableSession" Items="SelectableSessions" Dense="true" Hover="true">
+                            <MudTable T="SelectableSession" Items="SelectableSessions" Dense="true" Hover="true"
+                                      Virtualize="true" ItemSize="40" OverscanCount="6"
+                                      FixedHeader="true" FixedFooter="true" Height="400px">
                                 <HeaderContent>
                                     <MudTh></MudTh>
                                     <MudTh>Started</MudTh>
@@ -431,44 +433,59 @@
             </MudStack>
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                 <MudSelect T="string" Label="Filter by status" @bind-Value="StatusFilter" Style="max-width:220px;"
-                           Dense="true" Margin="Margin.Dense">
+                           Dense="true" Margin="Margin.Dense" Adornment="Adornment.Start"
+                           AdornmentIcon="@Icons.Material.Filled.FilterList">
                     <MudSelectItem T="string" Value="@Lifecycle.AnyStatus">All statuses</MudSelectItem>
                     @foreach (var s in Lifecycle.Names)
                     {
                         <MudSelectItem T="string" Value="s">@s</MudSelectItem>
                     }
                 </MudSelect>
-                <MudButton Variant="Variant.Outlined" OnClick="LoadListAsync"
-                           StartIcon="@Icons.Material.Filled.FilterList" Size="Size.Small">
-                    Apply
-                </MudButton>
+                @if (FilteredInvoiceSummaries is not null && InvoiceSummaries is not null)
+                {
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Showing @FilteredInvoiceSummaries.Count of @InvoiceSummaries.Count
+                    </MudText>
+                }
             </MudStack>
-            @if (InvoiceSummaries is null)
+            @if (FilteredInvoiceSummaries is null)
             {
                 <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="5" Columns="6"/>
             }
-            else if (InvoiceSummaries.Count == 0)
+            else if (FilteredInvoiceSummaries.Count == 0)
             {
                 <MudPaper Class="pa-6" Elevation="1">
                     <MudStack Spacing="3" AlignItems="AlignItems.Center">
                         <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Color="Color.Secondary"
                                  Style="font-size:3rem;"/>
                         <MudText Typo="Typo.h6">No invoices found</MudText>
-                        <MudText Color="Color.Secondary">Generate your first invoice or adjust your filters to see
-                            results here.
-                        </MudText>
-                        @if (CanManage)
+                        @if (InvoiceSummaries is { Count: > 0 })
                         {
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreate">
-                                Generate your first invoice
+                            <MudText Color="Color.Secondary">
+                                No invoices match the "@StatusFilter" status.
+                            </MudText>
+                            <MudButton Variant="Variant.Text" OnClick="@(() => StatusFilter = Lifecycle.AnyStatus)">
+                                Clear filter
                             </MudButton>
+                        }
+                        else
+                        {
+                            <MudText Color="Color.Secondary">Generate your first invoice to see results here.</MudText>
+                            @if (CanManage)
+                            {
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreate">
+                                    Generate your first invoice
+                                </MudButton>
+                            }
                         }
                     </MudStack>
                 </MudPaper>
             }
             else
             {
-                <MudTable T="Summary" Items="InvoiceSummaries" Dense="true" Hover="true">
+                <MudTable T="Summary" Items="FilteredInvoiceSummaries" Dense="true" Hover="true"
+                          Virtualize="true" ItemSize="40" OverscanCount="6"
+                          FixedHeader="true" Height="60vh">
                     <HeaderContent>
                         <MudTh>Invoice #</MudTh>
                         <MudTh>Client</MudTh>
@@ -511,3 +528,14 @@
             title="New invoice"
             Style="position:fixed; bottom:24px; right:24px; z-index:1000;"/>
 }
+<ConfirmDialog Visible="@ShowConfirm"
+               VisibleChanged="@(visible => { if (!visible) CompleteConfirm(false); })"
+               Title="@ConfirmTitle"
+               Message="@ConfirmMessage"
+               Details="@ConfirmDetails"
+               Icon="@ConfirmIcon"
+               ConfirmIcon="@ConfirmButtonIcon"
+               ConfirmText="@ConfirmButtonText"
+               ConfirmColor="@ConfirmButtonColor"
+               IsBusy="IsBusy"
+               OnConfirm="@(() => CompleteConfirm(true))"/>

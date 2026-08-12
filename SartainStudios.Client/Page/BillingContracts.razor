@@ -5,7 +5,7 @@
 @attribute [Route(Metadata.BillingContract.Route)]
 @attribute [Authorize]
 @layout Main
-<PageHeader Title='@(SelectedContract is null ? "Billing contracts" : SelectedContract.ProjectName)'/>
+<PageHeader Title='@(SelectedContract is null ? "Billing Contracts" : SelectedContract.ProjectName)'/>
 <MudContainer MaxWidth="@(IsDetailView ? MaxWidth.Large : MaxWidth.ExtraLarge)" Class="my-4 my-sm-6">
     <MudStack Spacing="4">
         @if (!string.IsNullOrEmpty(ErrorMessage))
@@ -17,7 +17,7 @@
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                 <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
                            Href="@Metadata.BillingContract.Route">
-                    Billing contracts
+                    Billing Contracts
                 </MudButton>
                 <MudSpacer/>
                 @if (CanManage && SelectedContract is not null)
@@ -158,7 +158,7 @@
         {
             <MudStack Row="true" AlignItems="AlignItems.Center">
                 <MudStack Spacing="0">
-                    <MudText Typo="Typo.h4">Billing contracts</MudText>
+                    <MudText Typo="Typo.h4">Billing Contracts</MudText>
                     <MudText Color="Color.Secondary">Link project work to hourly rates and invoicing.</MudText>
                 </MudStack>
             </MudStack>
@@ -172,13 +172,13 @@
                     <MudStack Spacing="3" AlignItems="AlignItems.Center">
                         <MudIcon Icon="@Metadata.BillingContract.Icon" Color="Color.Secondary"
                                  Style="font-size:3rem;"/>
-                        <MudText Typo="Typo.h6">No billing contracts yet</MudText>
+                        <MudText Typo="Typo.h6">No Billing Contracts yet</MudText>
                         <MudText Color="Color.Secondary">
                             Create your first billing contract to start linking work to invoices.
                         </MudText>
                         @if (CanManage)
                         {
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreate">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreateAsync">
                                 Create your first contract
                             </MudButton>
                         }
@@ -242,7 +242,7 @@
                              OnCreate="CreateAsync"/>
 @if (!IsDetailView && CanManage)
 {
-    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreate"
+    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateAsync"
             title="New contract"
             Style="position:fixed; bottom:24px; right:24px; z-index:1000;"/>
 }
