@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Sartain Studios LLC</title>
+    <base href="/"/>
+    <meta content="#594AE2" name="theme-color"/>
+    <meta content="Sartain Studios client management application" name="description"/>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet"/>
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet"/>
+    <link href="assets/sartain-studios-icon.svg" rel="icon" type="image/svg+xml"/>
+    <link href="manifest.webmanifest" rel="manifest"/>
+    <link href="assets/icon-192.png" rel="apple-touch-icon" sizes="192x192"/>
+    <link href="assets/icon-512.png" rel="apple-touch-icon" sizes="512x512"/>
+    <script>
+        (function (l) {
+            if (l.search[1] === '/') {
+                var decoded = l.search.slice(1).split('&').map(function (s) {
+                    return s.replace(/~and~/g, '&');
+                }).join('?');
+                window.history.replaceState(null, null,
+                    l.pathname.slice(0, -1) + decoded + l.hash
+                );
+            }
+        }(window.location));
+    </script>
+    <script type="importmap"></script>
+    <script async defer src="https://accounts.google.com/gsi/client"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NKSBZDS70N"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+        gtag('config', 'G-NKSBZDS70N', {send_page_view: false});
+        window.trackPageView = function (path) {
+            gtag('event', 'page_view', {
+                page_path: path,
+                page_location: window.location.href,
+                page_title: document.title
+            });
+        };
+    </script>
+</head>
+<body>
+<div id="app"></div>
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a class="reload" href=".">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>
+<script src="_content/MudBlazor/MudBlazor.min.js"></script>
+<script src="js/file-download.js"></script>
+<script src="js/open-file.js"></script>
+<script src="js/google-authentication.js"></script>
+<script src="js/service-worker-registration.js"></script>
+<script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+</body>
+</html>

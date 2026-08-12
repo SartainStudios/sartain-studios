@@ -1,0 +1,248 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@using SartainStudios.Client.Service.Validation
+@using SartainStudios.Schema.Billing
+@attribute [Route(Metadata.BillingContract.Route)]
+@attribute [Authorize]
+@layout Main
+<PageHeader Title='@(SelectedContract is null ? "Billing contracts" : SelectedContract.ProjectName)'/>
+<MudContainer MaxWidth="@(IsDetailView ? MaxWidth.Large : MaxWidth.ExtraLarge)" Class="my-4 my-sm-6">
+    <MudStack Spacing="4">
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+        }
+        @if (IsDetailView)
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                           Href="@Metadata.BillingContract.Route">
+                    Billing contracts
+                </MudButton>
+                <MudSpacer/>
+                @if (CanManage && SelectedContract is not null)
+                {
+                    @if (!IsEditMode)
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Edit"
+                                   Href="@Metadata.BillingContract.Edit(Id!)">
+                            Edit
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Text" Href="@Metadata.BillingContract.Detail(Id!)"
+                                   Disabled="IsBusy">
+                            Cancel
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="IsBusy">
+                            @(IsBusy ? "Saving..." : "Save")
+                        </MudButton>
+                    }
+                }
+            </MudStack>
+            @if (IsLoading)
+            {
+                <LoadingSkeleton Variant="LoadingSkeletonVariant.Detail" Rows="4"/>
+            }
+            else if (SelectedContract is null)
+            {
+                <MudAlert Severity="Severity.Warning">Billing contract not found.</MudAlert>
+            }
+            else
+            {
+                <MudPaper Class="pa-4 pa-sm-6" Elevation="1">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                        <MudAvatar Color="Color.Primary" Size="Size.Large">
+                            <MudIcon Icon="@Metadata.BillingContract.Icon"/>
+                        </MudAvatar>
+                        <MudStack Spacing="0" Style="min-width:0;">
+                            <MudText Typo="Typo.h5" Class="text-truncate">@SelectedContract.ProjectName</MudText>
+                            <MudText Color="Color.Secondary">@SelectedContract.ServiceProvided</MudText>
+                        </MudStack>
+                        <MudSpacer/>
+                        @if (SelectedContract.IsActive)
+                        {
+                            <MudChip T="string" Color="Color.Success" Size="Size.Small">Active</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string" Color="Color.Default" Size="Size.Small">Inactive</MudChip>
+                        }
+                    </MudStack>
+                </MudPaper>
+                <MudPaper Class="pa-4 pa-sm-6" Elevation="1">
+                    @if (IsEditMode)
+                    {
+                        <MudForm @ref="EditForm">
+                            <MudGrid Spacing="3">
+                                <MudItem xs="12" sm="6">
+                                    <MudSelect T="string" Label="Project" @bind-Value="ProjectId" Required="true"
+                                               Disabled="IsBusy">
+                                        @foreach (var project in Projects)
+                                        {
+                                            <MudSelectItem T="string" Value="@project.Id">
+                                                @project.ClientCompanyName - @project.Name
+                                            </MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField T="string" Label="Service provided" @bind-Value="ServiceProvided"
+                                                  Required="true" Disabled="IsBusy"
+                                                  Validation="@(new Func<string, string?>(ValidateServiceProvided))"
+                                                  HelperText="e.g. 'Software Development'"/>
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudNumericField T="decimal" Label="Hourly rate ($)" @bind-Value="HourlyRate"
+                                                     Required="true" Min="0.01m" Format="F2" Disabled="IsBusy"
+                                                     Validation="@(new Func<decimal, string?>(ValidateHourlyRate))"/>
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudNumericField T="decimal" Label="Expected hours" @bind-Value="ExpectedHours"
+                                                     Required="true" Min="0.1m" Format="F1" Disabled="IsBusy"
+                                                     Validation="@(new Func<decimal, string?>(ValidateExpectedHours))"
+                                                     HelperText="Total expected duration for this contract"/>
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudSelect T="string" Label="Billing cycle" @bind-Value="BillingCycle"
+                                               Required="true" Disabled="IsBusy">
+                                        @foreach (var cycle in BillingCycles)
+                                        {
+                                            <MudSelectItem T="string" Value="@cycle">@cycle</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField T="string" Label="Invoice prefix" @bind-Value="InvoicePrefix"
+                                                  Required="true" Disabled="IsBusy" HelperText="e.g. 'SS-EC-'"
+                                                  Validation="@(new Func<string, string?>(FieldValidators.ValidateInvoicePrefix))"/>
+                                </MudItem>
+                                <MudItem xs="12">
+                                    <MudSwitch T="bool" Label="Active contract" @bind-Value="IsActive"
+                                               Color="Color.Primary" Disabled="IsBusy"/>
+                                </MudItem>
+                            </MudGrid>
+                        </MudForm>
+                    }
+                    else
+                    {
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">CONTRACT</MudText>
+                                    <MudText Typo="Typo.body2">Project: @SelectedContract.ProjectName</MudText>
+                                    <MudText Typo="Typo.body2">Service: @SelectedContract.ServiceProvided</MudText>
+                                    <MudText Typo="Typo.body2">Invoice prefix: @SelectedContract.InvoicePrefix</MudText>
+                                </MudStack>
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">BILLING</MudText>
+                                    <MudText Typo="Typo.body2">
+                                        Hourly rate: @SelectedContract.HourlyRate.ToString("C")
+                                    </MudText>
+                                    <MudText Typo="Typo.body2">
+                                        Expected hours: @((SelectedContract.ExpectedMinutes / 60m).ToString("F1"))
+                                    </MudText>
+                                    <MudText Typo="Typo.body2">Billing cycle: @SelectedContract.BillingCycle</MudText>
+                                </MudStack>
+                            </MudItem>
+                        </MudGrid>
+                    }
+                </MudPaper>
+            }
+        }
+        else
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h4">Billing contracts</MudText>
+                    <MudText Color="Color.Secondary">Link project work to hourly rates and invoicing.</MudText>
+                </MudStack>
+            </MudStack>
+            @if (Contracts is null)
+            {
+                <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="5" Columns="5"/>
+            }
+            else if (Contracts.Count == 0)
+            {
+                <MudPaper Class="pa-6" Elevation="1">
+                    <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Metadata.BillingContract.Icon" Color="Color.Secondary"
+                                 Style="font-size:3rem;"/>
+                        <MudText Typo="Typo.h6">No billing contracts yet</MudText>
+                        <MudText Color="Color.Secondary">
+                            Create your first billing contract to start linking work to invoices.
+                        </MudText>
+                        @if (CanManage)
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreate">
+                                Create your first contract
+                            </MudButton>
+                        }
+                    </MudStack>
+                </MudPaper>
+            }
+            else
+            {
+                <MudTable T="Summary" Items="Contracts" Dense="true" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Project</MudTh>
+                        <MudTh>Service</MudTh>
+                        <MudTh>Hourly rate</MudTh>
+                        <MudTh>Billing cycle</MudTh>
+                        <MudTh>Invoice prefix</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh Style="text-align:right;">Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Project">@context.ProjectName</MudTd>
+                        <MudTd DataLabel="Service">@context.ServiceProvided</MudTd>
+                        <MudTd DataLabel="Hourly rate">@context.HourlyRate.ToString("C")</MudTd>
+                        <MudTd DataLabel="Billing cycle">@context.BillingCycle</MudTd>
+                        <MudTd DataLabel="Invoice prefix">@context.InvoicePrefix</MudTd>
+                        <MudTd DataLabel="Status">
+                            @if (context.IsActive)
+                            {
+                                <MudChip T="string" Color="Color.Success" Size="Size.Small">Active</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Color="Color.Default" Size="Size.Small">Inactive</MudChip>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Actions" Style="text-align:right;">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small"
+                                           Href="@Metadata.BillingContract.Detail(context.Id)"
+                                           title="View contract"/>
+                            @if (CanManage)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                               Href="@Metadata.BillingContract.Edit(context.Id)"
+                                               title="Edit contract"/>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                               Size="Size.Small"
+                                               OnClick="() => DeleteAsync(context)" Disabled="IsBusy"
+                                               title="Delete contract"/>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        }
+    </MudStack>
+</MudContainer>
+<BillingContractCreateDialog Visible="@ShowCreate"
+                             VisibleChanged="OnCreateDialogVisibleChangedAsync"
+                             IsBusy="IsBusy"
+                             Projects="Projects"
+                             BillingCycles="BillingCycles"
+                             OnCreate="CreateAsync"/>
+@if (!IsDetailView && CanManage)
+{
+    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreate"
+            title="New contract"
+            Style="position:fixed; bottom:24px; right:24px; z-index:1000;"/>
+}

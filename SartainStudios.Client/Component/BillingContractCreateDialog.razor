@@ -1,0 +1,66 @@
+@using SartainStudios.Client.Service.Validation
+@namespace SartainStudios.Client.Component
+<MudDialog Visible="@Visible" VisibleChanged="OnVisibleChangedAsync" Options="DialogOptions">
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Description"/>
+            <MudText Typo="Typo.h6">New billing contract</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="CreateForm">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" Label="Project" @bind-Value="NewProjectId" Required="true" Disabled="IsBusy">
+                        @foreach (var project in Projects)
+                        {
+                            <MudSelectItem T="string" Value="@project.Id">
+                                @project.ClientCompanyName - @project.Name
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string" Label="Service provided" @bind-Value="NewServiceProvided" Required="true"
+                                  Disabled="IsBusy" HelperText="e.g. 'Software Development'"
+                                  Validation="@(new Func<string, string?>(ValidateServiceProvided))"/>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField T="decimal" Label="Hourly rate ($)" @bind-Value="NewHourlyRate" Required="true"
+                                     Min="0.01m" Format="F2" Disabled="IsBusy"
+                                     Validation="@(new Func<decimal, string?>(ValidateHourlyRate))"/>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField T="decimal" Label="Expected hours" @bind-Value="NewExpectedHours" Required="true"
+                                     Min="0.1m" Format="F1" Disabled="IsBusy"
+                                     Validation="@(new Func<decimal, string?>(ValidateExpectedHours))"
+                                     HelperText="Total expected duration for this contract"/>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" Label="Billing cycle" @bind-Value="NewBillingCycle" Required="true"
+                               Disabled="IsBusy">
+                        @foreach (var cycle in BillingCycles)
+                        {
+                            <MudSelectItem T="string" Value="@cycle">@cycle</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string" Label="Invoice prefix" @bind-Value="NewInvoicePrefix" Required="true"
+                                  Disabled="IsBusy" HelperText="e.g. 'SS-EC-'"
+                                  Validation="@(new Func<string, string?>(FieldValidators.ValidateInvoicePrefix))"/>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudSwitch T="bool" Label="Active contract" @bind-Value="NewIsActive" Color="Color.Primary"
+                               Disabled="IsBusy"/>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseAsync" Disabled="IsBusy">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync" Disabled="IsBusy">
+            @(IsBusy ? "Creating..." : "Save contract")
+        </MudButton>
+    </DialogActions>
+</MudDialog>

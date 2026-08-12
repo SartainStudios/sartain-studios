@@ -1,0 +1,19 @@
+@using NotFound = SartainStudios.Client.Page.NotFound
+<MudThemeProvider @ref="_mudThemeProvider" IsDarkMode="_isDarkMode" Theme="Theme"/>
+<MudPopoverProvider/>
+<MudDialogProvider/>
+<MudSnackbarProvider/>
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly" NotFoundPage="@typeof(NotFound)">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData">
+                <NotAuthorized>
+                    <RedirectToSignIn/>
+                </NotAuthorized>
+                <Authorizing>
+                    <MudProgressCircular Indeterminate="true"/>
+                </Authorizing>
+            </AuthorizeRouteView>
+        </Found>
+    </Router>
+</CascadingAuthenticationState>

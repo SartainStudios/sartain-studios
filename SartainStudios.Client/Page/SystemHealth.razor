@@ -1,0 +1,68 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Schema.Health
+@attribute [Route(Metadata.SystemHealth.Route)]
+@attribute [Authorize]
+<PageHeader Title="@Metadata.SystemHealth.Info.Name"/>
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-4 my-sm-6">
+    <MudStack Spacing="4">
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+        }
+        <MudStack Row="true" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h5">System status</MudText>
+            <MudSpacer/>
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="RefreshAsync"
+                       Disabled="IsLoading || IsRefreshing">
+                @(IsRefreshing ? "Refreshing..." : "Refresh")
+            </MudButton>
+        </MudStack>
+        @if (IsLoading)
+        {
+            <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="3"/>
+        }
+        else if (Report is null)
+        {
+            <MudAlert Severity="Severity.Warning">Unable to load system status.</MudAlert>
+        }
+        else
+        {
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                    <MudChip T="string" Color="@GetStatusColor(Report.Status)" Size="Size.Medium">
+                        @Report.Status
+                    </MudChip>
+                    <MudText Color="Color.Secondary">Checked in @FormatDuration(Report.TotalDuration)</MudText>
+                </MudStack>
+            </MudPaper>
+            @if (Report.Checks.Count == 0)
+            {
+                <MudAlert Severity="Severity.Info" Dense="true">No health checks are registered.</MudAlert>
+            }
+            else
+            {
+                <MudTable T="HealthCheckEntryResponse" Items="Report.Checks" Dense="true" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Check</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh>Description</MudTh>
+                        <MudTh Style="text-align:right;">Duration</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Check">@context.Name</MudTd>
+                        <MudTd DataLabel="Status">
+                            <MudChip T="string" Color="@GetStatusColor(context.Status)" Size="Size.Small">
+                                @context.Status
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Description">@(context.Description ?? "-")</MudTd>
+                        <MudTd DataLabel="Duration" Style="text-align:right;">@FormatDuration(context.Duration)</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        }
+    </MudStack>
+</MudContainer>

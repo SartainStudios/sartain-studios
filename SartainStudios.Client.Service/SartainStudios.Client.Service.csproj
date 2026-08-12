@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\SartainStudios.Client.Schema\SartainStudios.Client.Schema.csproj"/>
+        <ProjectReference Include="..\SartainStudios.Schema\SartainStudios.Schema.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="10.0.10"/>
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10"/>
+        <PackageReference Include="Microsoft.JSInterop" Version="10.0.10"/>
+        <PackageReference Include="MudBlazor" Version="9.7.0"/>
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0"/>
+    </ItemGroup>
+
+</Project>

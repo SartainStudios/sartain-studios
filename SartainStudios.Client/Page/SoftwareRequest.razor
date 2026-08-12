@@ -1,0 +1,45 @@
+@using SartainStudios.Client.Layout
+@layout Empty
+@attribute [Route(Metadata.Tool.RequestSoftwareRoute)]
+
+<PageHeader Title="Request Custom Software"/>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="py-8 py-sm-12">
+    <MudStack Spacing="6">
+        <MudStack Spacing="2">
+            <MudText Typo="Typo.h4">Let's build your app or website</MudText>
+            <MudText Typo="Typo.body1" Class="mud-text-secondary">
+                Tell us what you need. We'll reply with a clear build plan and estimate.
+            </MudText>
+        </MudStack>
+
+        <MudPaper Elevation="1" Class="pa-4 pa-sm-6 rounded-lg">
+            <MudStack Spacing="4">
+                <MudSelect @bind-Value="ProjectType" Label="Project type" Variant="Variant.Outlined">
+                    @foreach (var option in ProjectTypeOptions)
+                    {
+                        <MudSelectItem Value="option">@option</MudSelectItem>
+                    }
+                </MudSelect>
+
+                <MudTextField @bind-Value="BusinessName" Label="Business name" Variant="Variant.Outlined"/>
+
+                <MudTextField @bind-Value="Goals" Label="What should it do?" Variant="Variant.Outlined" Lines="3"
+                              HelperText="Goals, key features, and who will use it."/>
+
+                <MudTextField @bind-Value="Timeline" Label="Timeline" Variant="Variant.Outlined"/>
+
+                <MudTextField @bind-Value="Budget" Label="Budget range" Variant="Variant.Outlined"/>
+
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" FullWidth="true"
+                           StartIcon="@Icons.Material.Filled.Send" Href="@MailTo" Target="_blank">
+                    Send request
+                </MudButton>
+
+                <MudText Typo="Typo.caption" Align="Align.Center" Class="mud-text-secondary">
+                    Opens your email app so you can review before sending.
+                </MudText>
+            </MudStack>
+        </MudPaper>
+    </MudStack>
+</MudContainer>

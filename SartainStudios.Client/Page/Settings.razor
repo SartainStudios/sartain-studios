@@ -1,0 +1,215 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@using SartainStudios.Schema.Authentication
+@using SartainStudios.Schema.User
+@attribute [Route(Metadata.Account.Route)]
+@attribute [Authorize]
+@layout Main
+<PageHeader Title="Account"/>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="my-6">
+    @if (Account is null)
+    {
+        <MudStack Spacing="6">
+            <LoadingSkeleton Variant="LoadingSkeletonVariant.Detail" Rows="2"/>
+            <LoadingSkeleton Variant="LoadingSkeletonVariant.Form" Rows="3"/>
+        </MudStack>
+    }
+    else
+    {
+        <MudPaper Class="pa-6 mb-6" Elevation="2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="4">
+                @if (!string.IsNullOrWhiteSpace(ProfilePhotoUrl))
+                {
+                    <img src="@ProfilePhotoUrl" alt="Profile photo" referrerpolicy="no-referrer"
+                         style="width:96px;height:96px;border-radius:50%;object-fit:cover;flex:0 0 auto;"/>
+                }
+                else
+                {
+                    <MudAvatar Size="Size.Large" Style="width:96px;height:96px;">
+                        @GetInitials(DisplayName)
+                    </MudAvatar>
+                }
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.h4">@Account.User.DisplayName</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Account.User.Email</MudText>
+                    @if (Account.IsAdministrator)
+                    {
+                        <MudChip T="string" Color="Color.Warning" Icon="@Icons.Material.Filled.AdminPanelSettings"
+                                 Size="Size.Small">
+                            Administrator
+                        </MudChip>
+                    }
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+        <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true"
+                 ActivePanelIndex="ActiveTabIndex" ActivePanelIndexChanged="OnTabChangedAsync">
+            <MudTabPanel Text="Profile" Icon="@Icons.Material.Filled.Person">
+                <MudStack Spacing="6" Class="pa-4 pa-sm-6">
+                    <MudStack Spacing="4">
+                        <MudText Typo="Typo.h5">Profile</MudText>
+                        <MudTextField T="string" Label="Display name" @bind-Value="DisplayName" Required="true"
+                                      Error="@HasFieldError(AccountErrors.DisplayNameField)"
+                                      ErrorText="@FieldError(AccountErrors.DisplayNameField)"/>
+                        <MudTextField T="string" Label="Profile photo URL" @bind-Value="ProfilePhotoUrl"
+                                      Error="@HasFieldError(AccountErrors.ProfilePhotoUrlField)"
+                                      ErrorText="@FieldError(AccountErrors.ProfilePhotoUrlField)"/>
+                        @if (!string.IsNullOrEmpty(ErrorMessage))
+                        {
+                            <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+                        }
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveProfileAsync"
+                                   Disabled="IsBusy">
+                            @(IsBusy ? "Saving..." : "Save")
+                        </MudButton>
+                    </MudStack>
+                    <MudDivider/>
+                    <MudStack Spacing="4">
+                        <MudText Typo="Typo.h5">Weekly hour limit notifications</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Get an email when you're approaching or reach the number of hours you want to work
+                            each week.
+                        </MudText>
+                        <MudSwitch T="bool" @bind-Value="HourLimitEnabled" Label="Enable weekly hour limit emails"
+                                   Color="Color.Primary"/>
+                        @if (HourLimitEnabled)
+                        {
+                            <MudNumericField T="double" Label="Weekly hour limit (hours)"
+                                             @bind-Value="WeeklyHourLimitHours" Min="1" Max="168" Step="0.25"
+                                             Error="@HasFieldError(AccountErrors.WeeklyHourLimitMinutesField)"
+                                             ErrorText="@FieldError(AccountErrors.WeeklyHourLimitMinutesField)"/>
+                            <MudNumericField T="int" Label="Warn me this many minutes before the limit"
+                                             @bind-Value="HourLimitWarningMinutes" Min="0" Max="480" Step="5"
+                                             Error="@HasFieldError(AccountErrors.HourLimitWarningMinutesField)"
+                                             ErrorText="@FieldError(AccountErrors.HourLimitWarningMinutesField)"/>
+                        }
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   OnClick="SaveNotificationPreferencesAsync"
+                                   Disabled="IsSavingNotificationPreferences">
+                            @(IsSavingNotificationPreferences ? "Saving..." : "Save notification preferences")
+                        </MudButton>
+                    </MudStack>
+                    <MudDivider/>
+                    <MudStack Spacing="4">
+                        <MudText Typo="Typo.h5" Color="Color.Error">Danger zone</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            Deleting your account permanently removes your profile, sign-in methods, and time
+                            sessions.
+                            If you are the sole owner of an organization, that organization and all of its clients,
+                            projects, billing contracts, invoices, and time sessions will also be permanently deleted.
+                            This action cannot be undone.
+                        </MudText>
+                        @if (!IsConfirmingDelete)
+                        {
+                            <MudButton Variant="Variant.Outlined" Color="Color.Error"
+                                       OnClick="() => IsConfirmingDelete = true">
+                                Delete my account
+                            </MudButton>
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Warning" Dense="true">
+                                Type <strong>DELETE</strong> below to confirm you want to permanently delete your
+                                account.
+                            </MudAlert>
+                            <MudTextField T="string" Label="Type DELETE to confirm"
+                                          @bind-Value="DeleteConfirmationText"/>
+                            @if (!string.IsNullOrEmpty(DeleteErrorMessage))
+                            {
+                                <MudAlert Severity="Severity.Error" Dense="true">@DeleteErrorMessage</MudAlert>
+                            }
+
+                            <MudStack Row="true" Spacing="2">
+                                <MudButton Variant="Variant.Filled" Color="Color.Error"
+                                           Disabled="@(DeleteConfirmationText != "DELETE" || IsDeleting)"
+                                           OnClick="DeleteAccountAsync">
+                                    @(IsDeleting ? "Deleting..." : "Permanently delete account")
+                                </MudButton>
+                                <MudButton Variant="Variant.Text" OnClick="CancelDelete" Disabled="IsDeleting">
+                                    Cancel
+                                </MudButton>
+                            </MudStack>
+                        }
+                    </MudStack>
+                </MudStack>
+            </MudTabPanel>
+            <MudTabPanel Text="Sign-in methods" Icon="@Icons.Material.Filled.VpnKey">
+                <MudStack Spacing="4" Class="pa-4 pa-sm-6">
+                    <MudText Typo="Typo.h5">Linked sign-in methods</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        You have @Account.Identities.Count linked provider(s). At least one must remain to keep
+                        access.
+                    </MudText>
+                    <MudList T="LinkedIdentityResponse" Dense="true">
+                        @foreach (var identity in Account.Identities)
+                        {
+                            <MudListItem T="LinkedIdentityResponse" Value="identity">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                                    <MudIcon Icon="@GetIcon(identity.Provider)"/>
+                                    <MudStack Spacing="0">
+                                        <MudText Typo="Typo.subtitle1">@FormatProvider(identity.Provider)</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                            @(identity.Email ?? "no email") &middot;
+                                            linked @identity.LinkedAt.ToLocalTime().ToString("g")
+                                            @if (identity.EmailVerified)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Success"
+                                                         Class="ml-2">
+                                                    Verified
+                                                </MudChip>
+                                            }
+                                        </MudText>
+                                    </MudStack>
+                                    <MudSpacer/>
+                                    <MudButton Size="Size.Small" Color="Color.Error" Variant="Variant.Outlined"
+                                               Disabled="Account.Identities.Count <= 1 || IsBusy"
+                                               OnClick="() => UnlinkAsync(identity.Provider)">
+                                        Unlink
+                                    </MudButton>
+                                </MudStack>
+                            </MudListItem>
+                        }
+                    </MudList>
+                    @if (!string.IsNullOrEmpty(ErrorMessage))
+                    {
+                        <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+                    }
+                </MudStack>
+            </MudTabPanel>
+            <MudTabPanel Text="Password" Icon="@Icons.Material.Filled.Password">
+                <MudStack Spacing="4" Class="pa-4 pa-sm-6">
+                    <MudText Typo="Typo.h5">@(Account.HasPassword ? "Change password" : "Set password")</MudText>
+                    @if (!Account.HasPassword)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">
+                            Setting a password enables email/password sign-in for your account.
+                        </MudAlert>
+                    }
+                    @if (Account.HasPassword)
+                    {
+                        <MudTextField T="string" @key="@($"current-password-{PasswordFormKey}")"
+                                      Label="Current password" @bind-Value="CurrentPassword"
+                                      InputType="InputType.Password" Required="true"
+                                      Error="@HasFieldError(AccountErrors.CurrentPasswordField)"
+                                      ErrorText="@FieldError(AccountErrors.CurrentPasswordField)"/>
+                    }
+                    <MudTextField T="string" @key="@($"new-password-{PasswordFormKey}")"
+                                  Label="New password" @bind-Value="NewPassword"
+                                  InputType="InputType.Password" Required="true"
+                                  HelperText="@($"Minimum {MinimumPasswordLength} characters")"
+                                  Error="@HasFieldError(AccountErrors.NewPasswordField)"
+                                  ErrorText="@FieldError(AccountErrors.NewPasswordField)"/>
+                    <MudTextField T="string" @key="@($"confirm-password-{PasswordFormKey}")"
+                                  Label="Confirm new password" @bind-Value="ConfirmPassword"
+                                  InputType="InputType.Password" Required="true"
+                                  Error="@HasFieldError(ConfirmPasswordField)"
+                                  ErrorText="@FieldError(ConfirmPasswordField)"/>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ChangePasswordAsync"
+                               Disabled="@(IsBusy || !CanSubmitPassword)">
+                        @(IsBusy ? "Saving..." : Account.HasPassword ? "Update password" : "Set password")
+                    </MudButton>
+                </MudStack>
+            </MudTabPanel>
+        </MudTabs>
+    }
+</MudContainer>

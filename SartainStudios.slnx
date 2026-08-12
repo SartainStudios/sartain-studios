@@ -1,0 +1,10 @@
+<Solution>
+    <Project Path="SartainStudios.Api.Schema/SartainStudios.Api.Schema.csproj"/>
+    <Project Path="SartainStudios.Api.Service.Test/SartainStudios.Api.Service.Test.csproj"/>
+    <Project Path="SartainStudios.Api.Service/SartainStudios.Api.Service.csproj"/>
+    <Project Path="SartainStudios.Api/SartainStudios.Api.csproj"/>
+    <Project Path="SartainStudios.Client.Schema/SartainStudios.Client.Schema.csproj"/>
+    <Project Path="SartainStudios.Client.Service/SartainStudios.Client.Service.csproj"/>
+    <Project Path="SartainStudios.Client/SartainStudios.Client.csproj"/>
+    <Project Path="SartainStudios.Schema/SartainStudios.Schema.csproj"/>
+</Solution>

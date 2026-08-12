@@ -1,0 +1,14 @@
+@using SartainStudios.Client.Component.MainMenu
+@using SartainStudios.Client.Layout
+@layout Public
+@attribute [Route(Metadata.MainMenu.IndexRoute)]
+<PageHeader Title="@Metadata.MainMenu.IndexInfo.Name"/>
+<MudContainer MaxWidth="MaxWidth.Large" Class="py-8">
+    <MudStack Spacing="8">
+        <MudGrid Spacing="6">
+            <Buttons/>
+        </MudGrid>
+        <MudDivider/>
+        <ContactHelpButton/>
+    </MudStack>
+</MudContainer>

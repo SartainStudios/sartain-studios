@@ -1,0 +1,294 @@
+@using SartainStudios.Client.Layout
+@attribute [Route(Metadata.Legal.PrivacyRoute)]
+@layout Public
+<PageHeader Title="@Metadata.Legal.Privacy.Name"/>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="py-8 py-sm-12">
+    <MudStack Spacing="6">
+        <MudStack Spacing="2">
+            <MudText Typo="Typo.h4">Privacy Policy</MudText>
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                Last updated: @LastUpdated
+            </MudText>
+        </MudStack>
+        <MudPaper Elevation="1" Class="pa-4 pa-sm-6 rounded-lg">
+            <MudStack Spacing="6">
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.body1">
+                        This Privacy Policy explains how @CompanyName ("we", "us", or "our") collects, uses, and
+                        protects information across our products (together, the "Services").
+                    </MudText>
+                    <MudText Typo="Typo.body1">
+                        Our Services work in two very different ways, so this policy is split accordingly. Please read
+                        the section that applies to the product you are using.
+                    </MudText>
+                </MudStack>
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">
+                    <strong>The short version:</strong> our mobile apps do not collect personal information — they only
+                    show ads served by Google. Our website requires an account, so it does store your email, name,
+                    profile photo, and the business records you create. We never sell your personal information.
+                </MudAlert>
+                <MudDivider/>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h5">Part A — Our Mobile Apps</MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                        Applies to our free, ad-supported mobile applications, which do not require an account.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">A1. Information We Collect</MudText>
+                    <MudText Typo="Typo.body1">
+                        <strong>We do not collect personal information through our mobile apps.</strong> We do not ask
+                        for your name, email address, or phone number, we do not require an account, and we do not
+                        operate analytics or user profiles in these apps. Any content or settings you create stay on
+                        your device.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">A2. Advertising</MudText>
+                    <MudText Typo="Typo.body1">
+                        Our mobile apps display advertisements served by Google (Google AdMob). Google and its partners
+                        may use cookies, device identifiers (such as your advertising ID), and similar technologies to
+                        serve and measure ads, including ads based on your prior activity in other apps and websites.
+                    </MudText>
+                    <MudText Typo="Typo.body1">
+                        This information is collected by Google, not by us. We do not receive personal information from
+                        Google's ad services — we only see aggregated, anonymous performance reporting such as total
+                        impressions and revenue. See Section C1 for details and opt-out links.
+                    </MudText>
+                </MudStack>
+                <MudDivider/>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h5">Part B — Our Website and Web App</MudText>
+                    <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                        Applies to @WebsiteName and the account-based time tracking and invoicing application.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">B1. Account Information</MudText>
+                    <MudText Typo="Typo.body1">
+                        Using the web app requires an account. Depending on how you sign up, we collect and store:
+                    </MudText>
+                    <MudStack Spacing="1" Class="ml-4">
+                        <MudText Typo="Typo.body1">
+                            <strong>Sign in with Google.</strong> When you choose Google sign-in, Google shares your
+                            email address, whether that email is verified, your name, your profile photo, and a unique
+                            Google account identifier. We store these so we can create and recognize your account. We
+                            do not receive your Google password, and we do not access your Gmail, Drive, contacts, or
+                            any other Google data.
+                        </MudText>
+                        <MudText Typo="Typo.body1">
+                            <strong>Email and password.</strong> If you register with an email address and password, we
+                            store your email address and a one-way cryptographic hash of your password (BCrypt). We
+                            never store your password in a readable form and we cannot recover it for you — we can only
+                            help you reset it.
+                        </MudText>
+                        <MudText Typo="Typo.body1">
+                            <strong>Profile.</strong> A display name, profile photo URL, your role and membership in any
+                            organization, and the dates your account was created and last updated.
+                        </MudText>
+                    </MudStack>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">B2. Information You Enter Into the App</MudText>
+                    <MudText Typo="Typo.body1">
+                        The app exists to help you run your business, so it stores the records you create, including:
+                        organizations and their addresses, phone numbers, and email addresses; clients and their
+                        contact people, addresses, phone numbers, and email addresses; projects; billing contracts and
+                        rates; work sessions and time entries; and invoices, including PDF invoices generated from that
+                        information.
+                    </MudText>
+                    <MudText Typo="Typo.body1">
+                        Some of this information describes other people, such as your clients and their contact
+                        persons, or teammates you invite by email. You are responsible for having a lawful basis to
+                        provide us that information, and for telling those people how their information is used. We
+                        process it only on your behalf, to operate the Services for you.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">B3. Technical and Session Information</MudText>
+                    <MudText Typo="Typo.body1">
+                        When you sign in, we issue a short-lived access token and a refresh token, and store them in
+                        your browser's local storage along with your user ID, display name, email, profile photo URL,
+                        and current organization. This is what keeps you signed in; clearing your browser storage or
+                        signing out removes it.
+                    </MudText>
+                    <MudText Typo="Typo.body1">
+                        Like nearly all web services, our servers and hosting provider process standard technical data
+                        such as IP addresses and request logs in order to deliver the site, keep it secure, and
+                        diagnose errors.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">B4. Emails We Send</MudText>
+                    <MudText Typo="Typo.body1">
+                        We use your email address to send service messages that are necessary to operate your account,
+                        such as password reset links and organization invitations. Password reset links are
+                        time-limited and expire shortly after they are issued. These emails are delivered through a
+                        third-party email provider.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">B5. Advertising on the Website</MudText>
+                    <MudText Typo="Typo.body1">
+                        We may introduce Google-served advertising on our website and web app in the future. If and
+                        when we do, the practices described in Section C1 will apply here as well, and where consent is
+                        legally required you will be asked for it before personalized ads are shown.
+                    </MudText>
+                </MudStack>
+                <MudDivider/>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h5">Part C — Applies to All Services</MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">C1. Google Advertising and Your Choices</MudText>
+                    <MudText Typo="Typo.body1">
+                        Google's use of advertising information is governed by Google's own privacy policy. You can
+                        review it and control what you see using the links below:
+                    </MudText>
+                    <MudStack Spacing="1" Class="ml-4">
+                        <MudLink Href="https://policies.google.com/privacy" Target="_blank" rel="noopener noreferrer">
+                            Google Privacy Policy
+                        </MudLink>
+                        <MudLink Href="https://policies.google.com/technologies/partner-sites" Target="_blank"
+                                 rel="noopener noreferrer">
+                            How Google uses information from sites or apps that use our services
+                        </MudLink>
+                        <MudLink Href="https://adssettings.google.com" Target="_blank" rel="noopener noreferrer">
+                            Google Ads Settings — opt out of personalized ads
+                        </MudLink>
+                        <MudLink Href="https://www.aboutads.info/choices/" Target="_blank" rel="noopener noreferrer">
+                            aboutads.info/choices — industry-wide opt out
+                        </MudLink>
+                    </MudStack>
+                    <MudText Typo="Typo.body1">
+                        On mobile devices you can also reset your advertising identifier or opt out of ad
+                        personalization in your device's privacy settings.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">C2. How We Use Information</MudText>
+                    <MudText Typo="Typo.body1">
+                        We use the information described above only to: create and secure your account; authenticate
+                        you and keep you signed in; provide the features you ask for, such as tracking time and
+                        generating invoices; send service emails such as password resets and invitations; keep the
+                        Services reliable and prevent abuse; and comply with legal obligations. We do not use your
+                        business records for advertising, and we do not use them to train machine learning models.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">C3. How We Share Information</MudText>
+                    <MudText Typo="Typo.body1">
+                        <strong>We do not sell your personal information, and we do not share it for cross-context
+                            behavioral advertising.</strong> We share information only with service providers who help
+                        us
+                        operate the Services, and only as needed for them to do so:
+                    </MudText>
+                    <MudStack Spacing="1" Class="ml-4">
+                        <MudText Typo="Typo.body1">
+                            <strong>Google</strong> — for sign-in and for serving advertisements.
+                        </MudText>
+                        <MudText Typo="Typo.body1">
+                            <strong>Our database and hosting providers</strong> — to store your data and run the
+                            Services.
+                        </MudText>
+                        <MudText Typo="Typo.body1">
+                            <strong>Our email provider</strong> — to deliver password resets and invitations.
+                        </MudText>
+                    </MudStack>
+                    <MudText Typo="Typo.body1">
+                        If you belong to an organization, your name, email, and work activity are visible to
+                        administrators and other members of that organization as needed for its operation. We may also
+                        disclose information if required by law, or in connection with a merger or sale of assets, in
+                        which case we will notify you.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">C4. Security</MudText>
+                    <MudText Typo="Typo.body1">
+                        We use reasonable technical and organizational safeguards, including encrypted connections
+                        (HTTPS/TLS), one-way BCrypt password hashing, short-lived access tokens, and restricted
+                        administrative access to our database.
+                    </MudText>
+                    <MudText Typo="Typo.body1">
+                        As the platform operator, we retain limited infrastructure-level access necessary for
+                        maintenance, support, and reliability. We do not have access to your Google credentials, and
+                        passwords are never stored in recoverable form. Any operator access to production data is
+                        restricted to legitimate support needs and is subject to access controls and audit logging.
+                    </MudText>
+                    <MudText Typo="Typo.body1">
+                        No method of transmission or storage is completely secure, so we cannot guarantee absolute
+                        security.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">C5. Data Retention and Deletion</MudText>
+                    <MudText Typo="Typo.body1">
+                        We keep your account information and business records for as long as your account is active. You
+                        may request deletion of your account and associated data at any time by contacting us at
+                        <MudLink Href="@($"mailto:{ContactEmail}")">@ContactEmail</MudLink>
+                        , and we will delete it
+                        within a reasonable period, except where we are required to retain certain records for legal,
+                        tax, or accounting purposes. Our mobile apps retain nothing, because they collect nothing.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">C6. Your Privacy Rights</MudText>
+                    <MudText Typo="Typo.body1">
+                        Depending on where you live, you may have the right to access, correct, export, restrict, or
+                        delete the personal information we hold about you, to object to certain processing, and to
+                        withdraw consent. To exercise any of these rights, email us at
+                        <MudLink Href="@($"mailto:{ContactEmail}")">@ContactEmail</MudLink>
+                        . We will not discriminate
+                        against you for exercising them.
+                    </MudText>
+                    <MudText Typo="Typo.body1">
+                        For personal information collected by Google in its role as an advertising provider, requests
+                        should be directed to Google. If you are in the European Economic Area or the United Kingdom,
+                        you also have the right to lodge a complaint with your local supervisory authority.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">C7. International Transfers</MudText>
+                    <MudText Typo="Typo.body1">
+                        We are based in the United States, and the Services are operated using infrastructure located in
+                        the United States. If you access the Services from elsewhere, your information will be
+                        transferred to and processed in the United States, where privacy laws may differ from those in
+                        your country.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">C8. Children's Privacy</MudText>
+                    <MudText Typo="Typo.body1">
+                        The Services are not directed to children under 13, and we do not knowingly collect information
+                        from children. Where required, ads shown to users we believe may be children are limited to
+                        non-personalized advertising. If you believe a child has provided us information, contact us and
+                        we will delete it.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">C9. Third-Party Links</MudText>
+                    <MudText Typo="Typo.body1">
+                        The Services may link to third-party websites, including sites reached by tapping an ad. We are
+                        not responsible for their privacy practices, and we encourage you to read their policies.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">C10. Changes to This Policy</MudText>
+                    <MudText Typo="Typo.body1">
+                        We may update this Privacy Policy from time to time. When we do, we will revise the "Last
+                        updated" date above, and for material changes we will provide additional notice. Continued use
+                        of the Services after an update means you accept the revised policy.
+                    </MudText>
+                </MudStack>
+                <MudStack Spacing="2">
+                    <MudText Typo="Typo.h6">C11. Contact Us</MudText>
+                    <MudText Typo="Typo.body1">
+                        Questions about this Privacy Policy or your data? Email us at
+                        <MudLink Href="@($"mailto:{ContactEmail}")">@ContactEmail</MudLink>
+                        .
+                    </MudText>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </MudStack>
+</MudContainer>

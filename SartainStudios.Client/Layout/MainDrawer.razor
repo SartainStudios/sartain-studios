@@ -1,0 +1,42 @@
+﻿@using Metadata = SartainStudios.Client.Page.Metadata
+<MudDrawer Open="Open"
+           OpenChanged="OpenChanged"
+           ClipMode="DrawerClipMode.Always"
+           Elevation="2"
+           Variant="DrawerVariant.Responsive"
+           Breakpoint="Breakpoint.Sm">
+    <MudNavMenu>
+        <MudNavLink Href="@Metadata.Invoicing.DashboardRoute" Icon="@Metadata.Invoicing.DashboardInfo.Icon">
+            @Metadata.Invoicing.DashboardInfo.Name
+        </MudNavLink>
+        <MudNavLink Href="@Metadata.Organization.Route" Icon="@Metadata.Organization.IndexInfo.Icon">
+            @Metadata.Organization.IndexInfo.Name
+        </MudNavLink>
+        <MudNavLink Href="@Metadata.Client.Route" Icon="@Metadata.Client.Info.Icon">
+            @Metadata.Client.Info.Name
+        </MudNavLink>
+        <MudNavLink Href="@Metadata.Project.Route" Icon="@Metadata.Project.Info.Icon">
+            @Metadata.Project.Info.Name
+        </MudNavLink>
+        <MudNavLink Href="@Metadata.BillingContract.Route" Icon="@Metadata.BillingContract.Info.Icon">
+            @Metadata.BillingContract.Info.Name
+        </MudNavLink>
+        <MudNavLink Href="@Metadata.Invoicing.SessionsRoute" Icon="@Metadata.Invoicing.Sessions.Icon">
+            @Metadata.Invoicing.Sessions.Name
+        </MudNavLink>
+        <MudNavLink Href="@Metadata.Invoice.Route" Icon="@Metadata.Invoice.Info.Icon">
+            @Metadata.Invoice.Info.Name
+        </MudNavLink>
+        <MudTooltip Text="@(BuildCommitMessage ?? "No commit message")">
+            <MudNavLink Icon="@Icons.Material.Filled.Info" Disabled="true">
+                @(!string.IsNullOrWhiteSpace(BuildVersion) ? BuildVersion : "Development")
+            </MudNavLink>
+        </MudTooltip>
+    </MudNavMenu>
+    <MudDivider/>
+    <MudNavLink Href="@Metadata.MainMenu.IndexRoute"
+                Match="NavLinkMatch.All"
+                Icon="@Metadata.MainMenu.IndexInfo.Icon">
+        Exit to Main Menu
+    </MudNavLink>
+</MudDrawer>

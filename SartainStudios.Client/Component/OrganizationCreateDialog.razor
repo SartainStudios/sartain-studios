@@ -1,0 +1,42 @@
+@using SartainStudios.Client.Service.Validation
+@namespace SartainStudios.Client.Component
+<MudDialog Visible="@Visible" VisibleChanged="OnVisibleChangedAsync" Options="DialogOptions">
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Business"/>
+            <MudText Typo="Typo.h6">Create organization</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="CreateForm">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string" Label="Name" @bind-Value="NewName" Required="true" Disabled="IsBusy"/>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string" Label="Email" @bind-Value="NewEmail" InputType="InputType.Email"
+                                  Validation="@(new Func<string, string?>(FieldValidators.ValidateOptionalEmail))"
+                                  Disabled="IsBusy"/>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string" Label="Phone number" @bind-Value="NewPhoneNumber"
+                                  InputType="InputType.Telephone"
+                                  Validation="@(new Func<string, string?>(FieldValidators.ValidateOptionalPhoneNumber))"
+                                  Disabled="IsBusy"/>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2" Class="mb-n2">Address</MudText>
+                </MudItem>
+                <MudItem xs="12">
+                    <AddressFields Value="NewAddress" Disabled="IsBusy"/>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseAsync" Disabled="IsBusy">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync" Disabled="IsBusy">
+            @(IsBusy ? "Creating..." : "Create")
+        </MudButton>
+    </DialogActions>
+</MudDialog>

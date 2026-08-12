@@ -1,0 +1,8 @@
+@inherits LayoutComponentBase
+<MudLayout>
+    <MainAppBar OnDrawerToggle="DrawerToggle"/>
+    <MainDrawer @bind-Open="_drawerOpen"/>
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>

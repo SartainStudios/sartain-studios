@@ -1,0 +1,23 @@
+@using SartainStudios.Client.Layout
+@attribute [Route(Metadata.NotFound.Route)]
+@layout Empty
+<PageHeader Title="@Metadata.NotFound.Info.Name"/>
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex align-center justify-center" Style="position: fixed; inset: 0;">
+    <MudPaper Elevation="2" Class="pa-6" Style="width: 100%;">
+        <MudStack Spacing="3" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h3" Align="Align.Center">404</MudText>
+            <MudText Typo="Typo.h5" Align="Align.Center">@Metadata.NotFound.Info.Name</MudText>
+            <MudText Typo="Typo.body1" Align="Align.Center">
+                The page you were looking for does not exist or may have moved.
+            </MudText>
+            <MudStack Row="true" Spacing="2" Justify="@Justify.Center" Wrap="Wrap.Wrap">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@Metadata.Home.IndexRoute">
+                    @Metadata.Home.Info.Name
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="@Metadata.Account.SignIn.Route">
+                    @Metadata.Account.SignIn.Name
+                </MudButton>
+            </MudStack>
+        </MudStack>
+    </MudPaper>
+</MudContainer>
