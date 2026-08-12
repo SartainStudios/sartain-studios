@@ -1,0 +1,36 @@
+{
+    "name": "Sartain Studios LLC",
+    "short_name": "Sartain Studios",
+    "description": "Sartain Studios client management application",
+    "start_url": "./",
+    "scope": "./",
+    "display": "standalone",
+    "background_color": "#F8F9FA",
+    "theme_color": "#594AE2",
+    "icons": [
+        {
+            "src": "assets/icon-192.png",
+            "type": "image/png",
+            "sizes": "192x192",
+            "purpose": "any"
+        },
+        {
+            "src": "assets/icon-512.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "any"
+        },
+        {
+            "src": "assets/icon-192.png",
+            "type": "image/png",
+            "sizes": "192x192",
+            "purpose": "maskable"
+        },
+        {
+            "src": "assets/icon-512.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "maskable"
+        }
+    ]
+}

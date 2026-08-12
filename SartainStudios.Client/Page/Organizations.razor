@@ -1,0 +1,245 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@using SartainStudios.Client.Service.Validation
+@using SartainStudios.Schema.Membership
+@attribute [Route(Metadata.Organization.Route)]
+@attribute [Authorize]
+@layout Main
+<PageHeader Title="Organization"/>
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-4 my-sm-6">
+    <MudStack Spacing="4">
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+        }
+        @if (IsLoading)
+        {
+            <LoadingSkeleton Variant="LoadingSkeletonVariant.Detail" Rows="3"/>
+        }
+        else if (ActiveOrganization is null)
+        {
+            <MudPaper Class="pa-6" Elevation="1">
+                <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="@Icons.Material.Filled.Business" Color="Color.Secondary" Style="font-size:3rem;"/>
+                    <MudText Typo="Typo.h6" Align="Align.Center">
+                        @(HasOrganizations ? "No organization selected" : "You do not belong to any organization yet")
+                    </MudText>
+                    <MudText Color="Color.Secondary" Align="Align.Center">
+                        @(HasOrganizations
+                            ? "Pick an organization from the switcher in the top bar to manage it."
+                            : "Create an organization to start inviting members and tracking billable work.")
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        }
+        else
+        {
+            <MudPaper Class="pa-4 pa-sm-6" Elevation="1">
+                <MudGrid Spacing="3" Justify="Justify.SpaceBetween">
+                    <MudItem xs="12" sm="8">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                            <MudAvatar Color="Color.Primary" Size="Size.Large">
+                                <MudIcon Icon="@Icons.Material.Filled.Business"/>
+                            </MudAvatar>
+                            <MudStack Spacing="1" Style="min-width:0;">
+                                <MudText Typo="Typo.h5" Class="text-truncate">@ActiveOrganization.Name</MudText>
+                                <MudStack Row="true" Spacing="1" Wrap="Wrap.Wrap" AlignItems="AlignItems.Center">
+                                    <MudChip T="string" Color="Color.Info" Size="Size.Small"
+                                             Variant="Variant.Text">@ActiveOrganization.Role</MudChip>
+                                    @if (Rows is not null)
+                                    {
+                                        <MudChip T="string" Color="Color.Default" Size="Size.Small"
+                                                 Variant="Variant.Text">
+                                            @Rows.Count @(Rows.Count == 1 ? "member" : "members")
+                                        </MudChip>
+                                    }
+                                </MudStack>
+                            </MudStack>
+                        </MudStack>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudStack Spacing="2">
+                            <MudTooltip Text="You need at least two active organizations to switch."
+                                        Disabled="CanSwitchOrganizations">
+                                <MudSelect T="string"
+                                           Label="Switch organization"
+                                           Variant="Variant.Outlined"
+                                           Value="@SelectedOrganizationId"
+                                           ValueChanged="OnOrganizationSelectedAsync"
+                                           Disabled="!CanSwitchOrganizations || IsBusy"
+                                           Dense="true"
+                                           FullWidth="true"
+                                           Adornment="Adornment.Start"
+                                           AdornmentIcon="@Icons.Material.Filled.SwapHoriz">
+                                    @foreach (var org in SelectableOrganizations)
+                                    {
+                                        <MudSelectItem T="string" Value="@org.Id">@org.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudTooltip>
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+            <MudTabs Elevation="1" Rounded="true" ApplyEffectsToContainer="true"
+                     @bind-ActivePanelIndex="ActiveTabIndex">
+                <MudTabPanel Text="Details" Icon="@Icons.Material.Filled.Settings">
+                    <MudStack Spacing="4" Class="pa-4 pa-sm-6">
+                        @if (!CanEdit)
+                        {
+                            <MudAlert Severity="Severity.Info" Dense="true">
+                                Only organization owners can edit these details.
+                            </MudAlert>
+                        }
+                        <MudForm @ref="EditForm">
+                            <MudGrid Spacing="3">
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField T="string" Label="Name" @bind-Value="Name" Required="true"
+                                                  Disabled="!CanEdit"/>
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField T="string" Label="Email" @bind-Value="Email"
+                                                  InputType="InputType.Email"
+                                                  Validation="@(new Func<string, string?>(FieldValidators.ValidateOptionalEmail))"
+                                                  Disabled="!CanEdit"/>
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudTextField T="string" Label="Phone number" @bind-Value="PhoneNumber"
+                                                  InputType="InputType.Telephone"
+                                                  Validation="@(new Func<string, string?>(FieldValidators.ValidateOptionalPhoneNumber))"
+                                                  Disabled="!CanEdit"/>
+                                </MudItem>
+                                <MudItem xs="12">
+                                    <MudText Typo="Typo.subtitle2" Class="mb-n2">Address</MudText>
+                                </MudItem>
+                                <MudItem xs="12">
+                                    <AddressFields Value="Address" Disabled="!CanEdit"/>
+                                </MudItem>
+                            </MudGrid>
+                        </MudForm>
+                        @if (CanEdit)
+                        {
+                            <MudDivider/>
+                            <div class="d-flex justify-start justify-sm-end">
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync"
+                                           Disabled="IsBusy" Class="flex-grow-1 flex-sm-grow-0">
+                                    @(IsBusy ? "Saving..." : "Save")
+                                </MudButton>
+                            </div>
+                        }
+                    </MudStack>
+                </MudTabPanel>
+                <MudTabPanel Text="Members" Icon="@Icons.Material.Filled.Group">
+                    <MudStack Spacing="4" Class="pa-4 pa-sm-6">
+                        @if (CanInvite)
+                        {
+                            <MudPaper Class="pa-4" Elevation="0" Outlined="true">
+                                <MudStack Spacing="3">
+                                    <MudText Typo="Typo.subtitle1">Invite a member</MudText>
+                                    <MudGrid Spacing="3">
+                                        <MudItem xs="12" sm="6">
+                                            <MudTextField T="string" Label="Email" @bind-Value="InviteEmail"
+                                                          InputType="InputType.Email"
+                                                          Validation="@(new Func<string, string?>(FieldValidators.ValidateRequiredEmail))"
+                                                          Disabled="IsBusy"/>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="3">
+                                            <MudSelect T="string" Label="Role" @bind-Value="InviteRole"
+                                                       Disabled="IsBusy">
+                                                @foreach (var role in AvailableInviteRoles)
+                                                {
+                                                    <MudSelectItem T="string" Value="role">@role</MudSelectItem>
+                                                }
+                                            </MudSelect>
+                                        </MudItem>
+                                        <MudItem xs="12" sm="3" Class="d-flex align-center">
+                                            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                                                       OnClick="InviteAsync"
+                                                       Disabled="@(IsBusy || string.IsNullOrWhiteSpace(InviteEmail))">
+                                                @(IsBusy ? "Inviting..." : "Invite")
+                                            </MudButton>
+                                        </MudItem>
+                                    </MudGrid>
+                                </MudStack>
+                            </MudPaper>
+                        }
+                        @if (Rows is null)
+                        {
+                            <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="4" Columns="4"/>
+                        }
+                        else if (Rows.Count == 0)
+                        {
+                            <MudStack Spacing="2" AlignItems="AlignItems.Center" Class="py-6">
+                                <MudIcon Icon="@Icons.Material.Filled.GroupOff" Color="Color.Secondary"
+                                         Style="font-size:2.5rem;"/>
+                                <MudText Color="Color.Secondary">No members yet.</MudText>
+                            </MudStack>
+                        }
+                        else
+                        {
+                            <MudTable T="Summary" Items="Rows" Hover="true" Elevation="0"
+                                      Breakpoint="Breakpoint.Sm" Dense="true">
+                                <HeaderContent>
+                                    <MudTh>Member</MudTh>
+                                    <MudTh>Role</MudTh>
+                                    <MudTh>Status</MudTh>
+                                    <MudTh Style="text-align:right;">Actions</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="Member">
+                                        <MudStack Spacing="0">
+                                            <MudText Typo="Typo.body2">@(context.DisplayName ?? context.Email)</MudText>
+                                            @if (!string.IsNullOrWhiteSpace(context.DisplayName))
+                                            {
+                                                <MudText Typo="Typo.caption"
+                                                         Color="Color.Secondary">@context.Email</MudText>
+                                            }
+                                        </MudStack>
+                                    </MudTd>
+                                    <MudTd DataLabel="Role">
+                                        @if (CanChangeRole(context))
+                                        {
+                                            <MudSelect T="string" Value="@context.Role"
+                                                       ValueChanged="v => UpdateRoleAsync(context, v ?? context.Role)"
+                                                       Dense="true" Margin="Margin.Dense" Disabled="IsBusy"
+                                                       Style="min-width:120px;">
+                                                @foreach (var role in Enum.GetNames<RoleType>())
+                                                {
+                                                    <MudSelectItem T="string" Value="role">@role</MudSelectItem>
+                                                }
+                                            </MudSelect>
+                                        }
+                                        else
+                                        {
+                                            <MudChip T="string" Color="Color.Info" Size="Size.Small"
+                                                     Variant="Variant.Text">@context.Role</MudChip>
+                                        }
+                                    </MudTd>
+                                    <MudTd DataLabel="Status">
+                                        <MudChip T="string" Color="@StatusColor(context.Status)" Size="Size.Small"
+                                                 Variant="Variant.Text">@context.Status</MudChip>
+                                    </MudTd>
+                                    <MudTd DataLabel="Actions" Style="text-align:right;">
+                                        @if (CanRemove(context))
+                                        {
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                           Size="Size.Small" OnClick="() => RemoveAsync(context)"
+                                                           Disabled="IsBusy" title="Remove"/>
+                                        }
+                                    </MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        }
+                    </MudStack>
+                </MudTabPanel>
+            </MudTabs>
+        }
+    </MudStack>
+</MudContainer>
+<OrganizationCreateDialog @bind-Visible="ShowCreate" IsBusy="IsBusy" OnCreate="CreateAsync"/>
+@if (!IsLoading)
+{
+    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreate"
+            title="New organization"
+            Style="position:fixed; bottom:24px; right:24px; z-index:1000;"/>
+}

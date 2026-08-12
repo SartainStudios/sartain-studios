@@ -1,0 +1,109 @@
+<MudPaper Class="pa-6" Elevation="1">
+    <MudStack Spacing="3">
+        <MudStack Row="true" AlignItems="AlignItems.Center">
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.h5">Session Timer</MudText>
+                <MudText Color="Color.Secondary">
+                    Track your current session. Time is billed in whole minutes.
+                </MudText>
+            </MudStack>
+            <MudSpacer/>
+            @if (IsRunning)
+            {
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <MudProgressCircular Color="Color.Success" Size="Size.Small" Indeterminate="true"/>
+                    <MudChip T="string" Color="Color.Success" Size="Size.Small">Running</MudChip>
+                </MudStack>
+            }
+            else
+            {
+                <MudChip T="string" Color="Color.Default" Size="Size.Small">Stopped</MudChip>
+            }
+        </MudStack>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+        }
+        @if (IsLoading)
+        {
+            <LoadingSkeleton Variant="LoadingSkeletonVariant.Text" Rows="3"/>
+        }
+        else if (IsRunning && CurrentSession is not null)
+        {
+            <MudGrid>
+                <MudItem xs="12" md="8">
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.h2">@FormatDuration(CurrentElapsed)</MudText>
+                        <MudProgressLinear Color="Color.Primary" Value="@MinuteProgressPercent"
+                                           Rounded="true" Size="Size.Small"/>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @SecondsToNextMinute s until the next billable minute
+                        </MudText>
+                        <MudText Typo="Typo.subtitle1">@CurrentSession.ProjectName</MudText>
+                        <MudText Color="Color.Secondary">@CurrentSession.ServiceProvided</MudText>
+                        <MudText Color="Color.Secondary">
+                            Started @CurrentSession.StartTime.ToLocalTime().ToString("f")</MudText>
+                    </MudStack>
+                </MudItem>
+                <MudItem xs="12" md="4">
+                    <MudStack Spacing="2" AlignItems="AlignItems.Stretch">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Stop" OnClick="StopAsync" Disabled="IsBusy">
+                            Stop Timer
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Error"
+                                   StartIcon="@Icons.Material.Filled.Delete" OnClick="DiscardAsync" Disabled="IsBusy">
+                            Discard Session
+                        </MudButton>
+                    </MudStack>
+                </MudItem>
+            </MudGrid>
+        }
+        else
+        {
+            <MudStack Spacing="3">
+                <MudText Typo="Typo.h2">@FormatDuration(CurrentElapsed)</MudText>
+                @if (AvailableContracts.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true">
+                        @EmptyStateMessage
+                    </MudAlert>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               Href="@EmptyStateRoute"
+                               StartIcon="@Icons.Material.Filled.Add">
+                        @EmptyStateButtonText
+                    </MudButton>
+                }
+                else
+                {
+                    <MudGrid>
+                        <MudItem xs="12" md="8">
+                            <MudSelect T="string" Label="Billing contract" @bind-Value="SelectedContractId"
+                                       Disabled="IsBusy">
+                                @foreach (var contract in AvailableContracts)
+                                {
+                                    <MudSelectItem T="string" Value="@contract.Id">
+                                        @DisplayContract(contract)
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudStack Spacing="2" AlignItems="AlignItems.Stretch">
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="StartAsync"
+                                           Disabled="IsBusy || string.IsNullOrWhiteSpace(SelectedContractId)">
+                                    Start Timer
+                                </MudButton>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    Select an active contract before you begin tracking time.
+                                </MudText>
+                            </MudStack>
+                        </MudItem>
+                    </MudGrid>
+                }
+            </MudStack>
+        }
+    </MudStack>
+</MudPaper>

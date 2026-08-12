@@ -1,0 +1,8 @@
+@namespace SartainStudios.Client.Component
+<MudStack Spacing="2">
+    <div id="@ElementId"></div>
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+    }
+</MudStack>

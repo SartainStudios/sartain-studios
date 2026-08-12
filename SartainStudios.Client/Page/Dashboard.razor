@@ -1,0 +1,335 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@using SartainStudios.Schema.WorkSession
+@attribute [Route(Metadata.Invoicing.DashboardRoute)]
+@attribute [Authorize]
+@layout Main
+<PageHeader Title="@Metadata.Invoicing.DashboardInfo.Name"/>
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-2">
+    @if (IsLoading)
+    {
+        <MudStack Spacing="4">
+            <MudGrid>
+                <MudItem xs="12" lg="7">
+                    <LoadingSkeleton Variant="LoadingSkeletonVariant.Form" Rows="4"/>
+                </MudItem>
+                <MudItem xs="12" lg="5">
+                    <MudStack Spacing="3">
+                        <MudPaper Class="pa-4" Elevation="1">
+                            <LoadingSkeleton Variant="LoadingSkeletonVariant.Text" Rows="4"/>
+                        </MudPaper>
+                        <MudPaper Class="pa-4" Elevation="1">
+                            <LoadingSkeleton Variant="LoadingSkeletonVariant.Text" Rows="4"/>
+                        </MudPaper>
+                    </MudStack>
+                </MudItem>
+            </MudGrid>
+            <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="5"/>
+        </MudStack>
+    }
+    else
+    {
+        <MudStack Spacing="4">
+            @* Onboarding banner — shown until user has an active billing contract *@
+            @if (Onboarding is not null && !Onboarding.HasBillingContract)
+            {
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Filled.Rocket" Color="Color.Primary"/>
+                            <MudText Typo="Typo.h6">Welcome! Let's get you set up</MudText>
+                        </MudStack>
+                        <MudText Color="Color.Secondary">
+                            Complete these steps before you can start tracking time and creating invoices.
+                        </MudText>
+                        <MudList T="string" Dense="true">
+                            @* Optional: Configure organization *@
+                            <MudListItem
+                                Icon="@(Onboarding.OrganizationCustomized ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.Settings)"
+                                IconColor="@(Onboarding.OrganizationCustomized ? Color.Success : Color.Default)">
+                                @if (Onboarding.OrganizationCustomized)
+                                {
+                                    <MudText>Organization configured</MudText>
+                                }
+                                else
+                                {
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                        <MudLink Href="@Metadata.Organization.Route">Configure your organization
+                                        </MudLink>
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined"
+                                                 Color="Color.Default" Class="ml-1">Optional
+                                        </MudChip>
+                                    </MudStack>
+                                }
+                            </MudListItem>
+                            @* Step 1: Add a client *@
+                            <MudListItem
+                                Icon="@(Onboarding.HasClient ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.RadioButtonUnchecked)"
+                                IconColor="@(Onboarding.HasClient ? Color.Success : Color.Default)">
+                                @if (Onboarding.HasClient)
+                                {
+                                    <MudText>Client added</MudText>
+                                }
+                                else
+                                {
+                                    <MudLink Href="@Metadata.Client.Route">Add a client</MudLink>
+                                }
+                            </MudListItem>
+                            @* Step 2: Add a project — requires a client *@
+                            <MudListItem
+                                Icon="@(Onboarding.HasProject ? Icons.Material.Filled.CheckCircle : Onboarding.HasClient ? Icons.Material.Outlined.RadioButtonUnchecked : Icons.Material.Outlined.Lock)"
+                                IconColor="@(Onboarding.HasProject ? Color.Success : Color.Default)">
+                                @if (Onboarding.HasProject)
+                                {
+                                    <MudText>Project added</MudText>
+                                }
+                                else if (Onboarding.HasClient)
+                                {
+                                    <MudLink Href="@Metadata.Project.Route">Add a project</MudLink>
+                                }
+                                else
+                                {
+                                    <MudTooltip Text="Add a client first to unlock this step">
+                                        <MudText Color="Color.Secondary" Style="cursor:default;">Add a project</MudText>
+                                    </MudTooltip>
+                                }
+                            </MudListItem>
+                            @* Step 3: Create billing contract — requires a project *@
+                            <MudListItem
+                                Icon="@(Onboarding.HasBillingContract ? Icons.Material.Filled.CheckCircle : Onboarding.HasProject ? Icons.Material.Outlined.RadioButtonUnchecked : Icons.Material.Outlined.Lock)"
+                                IconColor="@(Onboarding.HasBillingContract ? Color.Success : Color.Default)">
+                                @if (Onboarding.HasBillingContract)
+                                {
+                                    <MudText>Billing contract created</MudText>
+                                }
+                                else if (Onboarding.HasProject)
+                                {
+                                    <MudLink Href="@Metadata.BillingContract.Route">Create a billing contract</MudLink>
+                                }
+                                else
+                                {
+                                    <MudTooltip Text="Add a project first to unlock this step">
+                                        <MudText Color="Color.Secondary" Style="cursor:default;">Create a billing
+                                            contract
+                                        </MudText>
+                                    </MudTooltip>
+                                }
+                            </MudListItem>
+                        </MudList>
+                        <MudDivider/>
+                        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center"
+                                  Wrap="Wrap.Wrap" Spacing="2">
+                            <MudText Color="Color.Secondary">
+                                Finish the required setup above to unlock the session timer and the rest of your
+                                dashboard.
+                            </MudText>
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Href="@NextSetupRoute"
+                                       StartIcon="@Icons.Material.Filled.ArrowForward">
+                                @NextSetupButtonText
+                            </MudButton>
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            }
+            @if (RequiresSetup)
+            {
+                <MudPaper Class="pa-6" Elevation="1">
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Filled.Lock" Color="Color.Primary"/>
+                            <MudText Typo="Typo.h6">Dashboard features unlock after setup</MudText>
+                        </MudStack>
+                        <MudText Color="Color.Secondary">
+                            Once you create an active billing contract, you'll be able to start a session and view time
+                            budgets, progress, and session history here.
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            }
+            else
+            {
+                @* Timer (left) + Time budget cards (right) — constrained on desktop *@
+                <MudGrid>
+                    <MudItem xs="12" lg="7">
+                        <SessionTimer Contracts="ActiveContracts" Onboarding="Onboarding" OnChanged="LoadAsync"
+                                      OnElapsedChanged="HandleElapsedChanged"/>
+                    </MudItem>
+                    @if (Budget is not null)
+                    {
+                        <MudItem xs="12" lg="5">
+                            <MudStack Spacing="3" Style="height:100%;">
+                                <MudPaper Class="pa-4" Elevation="1" Style="flex:1;">
+                                    <MudStack Spacing="2">
+                                        <MudText Typo="Typo.subtitle1">Today's remaining hours</MudText>
+                                        <MudProgressLinear
+                                            Value="@(Budget.DayTargetMinutes <= 0 ? 0 : Math.Min(100d, LiveDayWorkedMinutes * 100d / Budget.DayTargetMinutes))"
+                                            Color="@(LiveDayRemainingMinutes == 0 ? Color.Success : Color.Primary)"/>
+                                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                            <MudText Typo="Typo.body2">
+                                                Worked: @FormatHours(LiveDayWorkedMinutes)</MudText>
+                                            <MudText Typo="Typo.body2">
+                                                Target: @FormatHours(Budget.DayTargetMinutes)</MudText>
+                                        </MudStack>
+                                        <MudText Color="Color.Secondary">
+                                            @(LiveDayRemainingMinutes == 0 ? "Daily target met" : $"{FormatHours(LiveDayRemainingMinutes)} left today.") @StopTimeMessage
+                                        </MudText>
+                                    </MudStack>
+                                </MudPaper>
+                                <MudPaper Class="pa-4" Elevation="1" Style="flex:1;">
+                                    <MudStack Spacing="2">
+                                        <MudText Typo="Typo.subtitle1">This week's remaining hours</MudText>
+                                        <MudProgressLinear
+                                            Value="@(Budget.WeekTargetMinutes <= 0 ? 0 : Math.Min(100d, Budget.WeekWorkedMinutes * 100d / Budget.WeekTargetMinutes))"
+                                            Color="@(Budget.WeekRemainingMinutes == 0 ? Color.Success : Color.Primary)"/>
+                                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                            <MudText Typo="Typo.body2">
+                                                Worked: @FormatHours(Budget.WeekWorkedMinutes)</MudText>
+                                            <MudText Typo="Typo.body2">
+                                                Target: @FormatHours(Budget.WeekTargetMinutes)</MudText>
+                                        </MudStack>
+                                        <MudText Color="Color.Secondary">
+                                            @(Budget.WeekRemainingMinutes == 0 ? "Weekly target met" : $"{FormatHours(Budget.WeekRemainingMinutes)} left this week")
+                                        </MudText>
+                                    </MudStack>
+                                </MudPaper>
+                            </MudStack>
+                        </MudItem>
+                    }
+                </MudGrid>
+                <MudStack Row="true" AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.h5">Progress</MudText>
+                    <MudSpacer/>
+                    <MudText Color="Color.Secondary">@ActiveContracts.Count active
+                        contract@(ActiveContracts.Count == 1 ? string.Empty : "s")</MudText>
+                </MudStack>
+                @if (ProgressItems.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true">Create at least one active billing contract to see
+                        progress
+                        cards.
+                    </MudAlert>
+                }
+                else
+                {
+                    <MudGrid>
+                        @foreach (var item in ProgressItems)
+                        {
+                            <MudItem xs="12" md="6" lg="4">
+                                <MudPaper Class="pa-4" Elevation="1">
+                                    <MudStack Spacing="2">
+                                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                                            <MudStack Spacing="0">
+                                                <MudText Typo="Typo.subtitle1">@item.Contract.ProjectName</MudText>
+                                                <MudText
+                                                    Color="Color.Secondary">@item.Contract.ServiceProvided</MudText>
+                                            </MudStack>
+                                            <MudSpacer/>
+                                            <MudChip T="string" Color="@GetStatusColor(item)"
+                                                     Size="Size.Small">@item.Status</MudChip>
+                                        </MudStack>
+                                        <MudProgressLinear Value="@item.ProgressPercent"
+                                                           Color="@GetProgressColor(item)"/>
+                                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                            <MudText Typo="Typo.body2">
+                                                Logged: @FormatHours(item.LoggedMinutes)</MudText>
+                                            <MudText Typo="Typo.body2">
+                                                Target: @FormatHours(item.Contract.ExpectedMinutes)</MudText>
+                                        </MudStack>
+                                        <MudText Typo="Typo.body2"
+                                                 Color="Color.Secondary">@item.RemainingMessage</MudText>
+                                    </MudStack>
+                                </MudPaper>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                }
+
+                @if (Onboarding is null || Onboarding.HasLoggedSession)
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.h5">Session history</MudText>
+                        <MudSpacer/>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary"
+                                   Href="@Metadata.Invoicing.Sessions.Route"
+                                   StartIcon="@Icons.Material.Filled.AccessTime" Class="mr-2">All sessions
+                        </MudButton>
+                        <MudText Color="Color.Secondary">
+                            Latest @Sessions.Count session@(Sessions.Count == 1 ? string.Empty : "s")</MudText>
+                    </MudStack>
+                    @if (Sessions.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">No work sessions have been recorded yet.
+                        </MudAlert>
+                    }
+                    else
+                    {
+                        <MudTable T="History" Items="Sessions" Dense="true" Hover="true">
+                            <HeaderContent>
+                                <MudTh>Project</MudTh>
+                                <MudTh>Service</MudTh>
+                                <MudTh>Started</MudTh>
+                                <MudTh>Ended</MudTh>
+                                <MudTh>Duration</MudTh>
+                                <MudTh>Status</MudTh>
+                                <MudTh Style="text-align:right;">Actions</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Project">@context.ProjectName</MudTd>
+                                <MudTd DataLabel="Service">@context.ServiceProvided</MudTd>
+                                <MudTd DataLabel="Started">@context.StartTime.ToLocalTime().ToString("g")</MudTd>
+                                <MudTd DataLabel="Ended">
+                                    @if (context.IsRunning)
+                                    {
+                                        <MudChip T="string" Color="Color.Success" Size="Size.Small">Running</MudChip>
+                                    }
+                                    else if (context.EndTime.HasValue)
+                                    {
+                                        @context.EndTime.Value.ToLocalTime().ToString("g")
+                                    }
+                                    else
+                                    {
+                                        <MudText Color="Color.Secondary">-</MudText>
+                                    }
+                                </MudTd>
+                                <MudTd DataLabel="Duration">@FormatHours(context.ElapsedMinutes)</MudTd>
+                                <MudTd DataLabel="Status">
+                                    @if (context.InvoiceId is not null)
+                                    {
+                                        <MudChip T="string" Color="Color.Info" Size="Size.Small">Billed</MudChip>
+                                    }
+                                    else if (context.IsRunning)
+                                    {
+                                        <MudChip T="string" Color="Color.Success" Size="Size.Small">Running</MudChip>
+                                    }
+                                    else if (context.CanDiscard)
+                                    {
+                                        <MudChip T="string" Color="Color.Warning" Size="Size.Small">Unbilled</MudChip>
+                                    }
+                                </MudTd>
+                                <MudTd DataLabel="Actions" Style="text-align:right;">
+                                    @if (context.CanEdit)
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                       Color="Color.Primary"
+                                                       Size="Size.Small"
+                                                       Href="@Metadata.Invoicing.EditSession(context.SessionId)"
+                                                       Disabled="IsBusy"/>
+                                    }
+                                    @if (context.CanDiscard)
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                                       Size="Size.Small"
+                                                       OnClick="() => DiscardAsync(context)" Disabled="IsBusy"
+                                                       title="Discard session"/>
+                                    }
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                }
+            }
+        </MudStack>
+    }
+</MudContainer>

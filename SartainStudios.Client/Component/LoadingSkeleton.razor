@@ -1,0 +1,97 @@
+@namespace SartainStudios.Client.Component
+
+@switch (Variant)
+{
+    case LoadingSkeletonVariant.Table:
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Spacing="3">
+                <MudStack Row="true" Spacing="4" AlignItems="AlignItems.Center">
+                    @for (var column = 0; column < Columns; column++)
+                    {
+                        <MudSkeleton SkeletonType="SkeletonType.Text" Height="20px" Class="flex-grow-1"/>
+                    }
+                </MudStack>
+                <MudDivider/>
+                @for (var row = 0; row < Rows; row++)
+                {
+                    <MudStack Row="true" Spacing="4" AlignItems="AlignItems.Center">
+                        @for (var column = 0; column < Columns; column++)
+                        {
+                            <MudSkeleton SkeletonType="SkeletonType.Text" Height="18px" Class="flex-grow-1"/>
+                        }
+                    </MudStack>
+                }
+            </MudStack>
+        </MudPaper>
+        break;
+
+    case LoadingSkeletonVariant.List:
+        <MudPaper Elevation="1" Class="pa-4">
+            <MudStack Spacing="4">
+                @for (var row = 0; row < Rows; row++)
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                        <MudSkeleton SkeletonType="SkeletonType.Circle" Width="32px" Height="32px"/>
+                        <MudStack Spacing="1" Class="flex-grow-1">
+                            <MudSkeleton SkeletonType="SkeletonType.Text" Width="45%" Height="22px"/>
+                            <MudSkeleton SkeletonType="SkeletonType.Text" Width="70%" Height="16px"/>
+                        </MudStack>
+                    </MudStack>
+                }
+            </MudStack>
+        </MudPaper>
+        break;
+
+    case LoadingSkeletonVariant.Form:
+        <MudPaper Elevation="1" Class="pa-6">
+            <MudStack Spacing="4">
+                <MudSkeleton SkeletonType="SkeletonType.Text" Width="200px" Height="32px"/>
+                @for (var row = 0; row < Rows; row++)
+                {
+                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="100%" Height="56px"/>
+                }
+                <MudStack Row="true" Spacing="2">
+                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="120px" Height="36px"/>
+                    <MudSkeleton SkeletonType="SkeletonType.Rectangle" Width="100px" Height="36px"/>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+        break;
+
+    case LoadingSkeletonVariant.Detail:
+        <MudPaper Elevation="1" Class="pa-6">
+            <MudStack Spacing="4">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                    <MudSkeleton SkeletonType="SkeletonType.Circle" Width="40px" Height="40px"/>
+                    <MudSkeleton SkeletonType="SkeletonType.Text" Width="240px" Height="32px"/>
+                </MudStack>
+                @for (var row = 0; row < Rows; row++)
+                {
+                    <MudStack Spacing="1">
+                        <MudSkeleton SkeletonType="SkeletonType.Text" Width="120px" Height="16px"/>
+                        <MudSkeleton SkeletonType="SkeletonType.Text" Width="60%" Height="22px"/>
+                    </MudStack>
+                }
+            </MudStack>
+        </MudPaper>
+        break;
+
+    default:
+        <MudStack Spacing="2">
+            @for (var row = 0; row < Rows; row++)
+            {
+                <MudSkeleton SkeletonType="SkeletonType.Text" Height="20px"/>
+            }
+        </MudStack>
+        break;
+}
+
+@code {
+
+    [Parameter] public LoadingSkeletonVariant Variant { get; set; } = LoadingSkeletonVariant.Text;
+
+    [Parameter] public int Rows { get; set; } = 3;
+
+    [Parameter] public int Columns { get; set; } = 4;
+
+}

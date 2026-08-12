@@ -1,0 +1,47 @@
+@namespace SartainStudios.Client.Component
+<MudDialog Visible="@Visible" VisibleChanged="OnVisibleChangedAsync" Options="DialogOptions">
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Folder"/>
+            <MudText Typo="Typo.h6">New project</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        @if (Clients.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info" Dense="true">Create a client first before adding a project.</MudAlert>
+        }
+        else
+        {
+            <MudForm @ref="CreateForm">
+                <MudStack Spacing="3">
+                    <MudSelect T="string" Label="Client" @bind-Value="NewClientId" Required="true" Disabled="IsBusy">
+                        @foreach (var client in Clients)
+                        {
+                            <MudSelectItem T="string" Value="@client.Id">@client.CompanyName</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudTextField @bind-Value="NewName" Label="Project name" Required="true" Disabled="IsBusy"
+                                  HelperText="e.g. 'Restaurant Renovation'"/>
+                    <MudTextField @bind-Value="NewDescription" Label="Description" Required="true" Lines="3"
+                                  Disabled="IsBusy"/>
+                    <MudSelect T="string" Label="Status" @bind-Value="NewStatus" Required="true" Disabled="IsBusy">
+                        @foreach (var status in Statuses)
+                        {
+                            <MudSelectItem T="string" Value="@status">@status</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudStack>
+            </MudForm>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseAsync" Disabled="IsBusy">Cancel</MudButton>
+        @if (Clients.Count > 0)
+        {
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync" Disabled="IsBusy">
+                @(IsBusy ? "Creating..." : "Save project")
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>

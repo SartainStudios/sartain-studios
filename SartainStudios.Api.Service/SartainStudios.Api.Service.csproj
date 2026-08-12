@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="BCrypt.Net-Next" Version="4.2.0"/>
+        <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.10"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.10"/>
+        <PackageReference Include="MongoDB.Driver" Version="3.10.0"/>
+        <PackageReference Include="QuestPDF" Version="2026.7.2"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\SartainStudios.Api.Schema\SartainStudios.Api.Schema.csproj"/>
+    </ItemGroup>
+</Project>

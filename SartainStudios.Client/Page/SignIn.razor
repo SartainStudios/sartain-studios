@@ -1,0 +1,74 @@
+@using SartainStudios.Client.Layout
+@using SartainStudios.Schema.Authentication
+@attribute [Route(Metadata.Account.SignInRoute)]
+@layout Empty
+<PageHeader Title="Sign in"/>
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="d-flex justify-center align-center"
+              Style="min-height: 100vh; padding-top: 40px; padding-bottom: 40px;">
+    <MudPaper Class="pa-8" Elevation="1" Style="width: 100%; border-radius: 12px;">
+        <MudStack Spacing="6" Class="mb-2">
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.h4" Class="font-weight-bold">Sign in</MudText>
+                <MudText Typo="Typo.body2">(creates account if you do not have one.)</MudText>
+            </MudStack>
+            <GoogleSignInButton RedirectUrl="@ReturnUrl"/>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                <MudDivider Style="flex: 1 1 auto;"/>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="white-space: nowrap;">or use email
+                </MudText>
+                <MudDivider Style="flex: 1 1 auto;"/>
+            </MudStack>
+            <MudStack Spacing="3">
+                @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+                {
+                    <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true">
+                        @ErrorMessage
+                    </MudAlert>
+                }
+                <MudTextField T="string"
+                              Label="Email address"
+                              @bind-Value="Email"
+                              InputType="InputType.Email"
+                              Placeholder="you@example.com"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              FullWidth="true"
+                              Clearable="true"
+                              Error="@(FieldError(AuthenticationErrors.EmailField) is not null)"
+                              ErrorText="@FieldError(AuthenticationErrors.EmailField)"/>
+                <MudTextField T="string"
+                              Label="Password"
+                              @bind-Value="Password"
+                              InputType="InputType.Password"
+                              Placeholder="Enter your password"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              FullWidth="true"
+                              Error="@(FieldError(AuthenticationErrors.PasswordField) is not null)"
+                              ErrorText="@FieldError(AuthenticationErrors.PasswordField)"/>
+            </MudStack>
+            <MudStack Row="true" Justify="Justify.FlexEnd">
+                <MudLink Href="@Metadata.Account.ForgotPasswordRoute" Typo="Typo.body2">
+                    Forgot password?
+                </MudLink>
+            </MudStack>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="SubmitAsync"
+                       Disabled="IsBusy"
+                       FullWidth="true"
+                       Size="Size.Large"
+                       Class="mt-2">
+                @if (IsBusy)
+                {
+                    <MudProgressCircular Class="me-2" Size="Size.Small" Indeterminate="true"/>
+                    <span>Continuing...</span>
+                }
+                else
+                {
+                    <span>Continue</span>
+                }
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+</MudContainer>

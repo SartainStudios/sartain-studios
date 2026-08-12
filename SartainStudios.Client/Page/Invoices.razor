@@ -1,0 +1,513 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@using SartainStudios.Schema.Invoice
+@attribute [Route(Metadata.Invoice.Route)]
+@attribute [Authorize]
+@layout Main
+<PageHeader
+    Title='@(IsDetailView ? SelectedInvoice?.InvoiceNumber ?? "Invoice" : IsCreateView ? "New invoice" : "Invoices")'/>
+<MudContainer MaxWidth="@(IsDetailView || IsCreateView ? MaxWidth.Large : MaxWidth.ExtraLarge)" Class="my-6">
+    <MudStack Spacing="4">
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+        }
+        @if (IsDetailView)
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                           Href="@Metadata.Invoice.Route">
+                    Invoices
+                </MudButton>
+                <MudSpacer/>
+                @if (CanManage && SelectedInvoice is not null)
+                {
+                    @if (!IsEditMode)
+                    {
+                        @if (IsDraft(SelectedInvoice.Status))
+                        {
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Edit"
+                                       Href="@Metadata.Invoice.Edit(SelectedInvoice.Id)">
+                                Edit sessions
+                            </MudButton>
+                        }
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Text" Href="@Metadata.Invoice.Detail(Id!)" Disabled="IsBusy">
+                            Cancel
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync"
+                                   Disabled="IsBusy || SelectedSessionIds.Count == 0 || DueDate is null">
+                            @(IsBusy ? "Saving..." : "Save")
+                        </MudButton>
+                    }
+                }
+            </MudStack>
+            @if (IsLoading)
+            {
+                <MudStack Spacing="6">
+                    <LoadingSkeleton Variant="LoadingSkeletonVariant.Detail" Rows="4"/>
+                    <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="4" Columns="5"/>
+                </MudStack>
+            }
+            else if (SelectedInvoice is null)
+            {
+                <MudAlert Severity="Severity.Warning">Invoice not found.</MudAlert>
+            }
+            else if (IsEditMode)
+            {
+                <MudPaper Class="pa-6" Elevation="2">
+                    <MudStack Spacing="3">
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudText Typo="Typo.h6">@SelectedInvoice.InvoiceNumber - Sessions</MudText>
+                            <MudSpacer/>
+                            <MudText Color="Color.Secondary">
+                                @SelectedSessionIds.Count of @(SelectableSessions?.Count ?? 0) selected
+                            </MudText>
+                        </MudStack>
+                        @if (IsLoadingSessions)
+                        {
+                            <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="4" Columns="5"/>
+                        }
+                        else if (SelectableSessions is null || SelectableSessions.Count == 0)
+                        {
+                            <MudAlert Severity="Severity.Info" Dense="true">No sessions are available for this
+                                invoice.
+                            </MudAlert>
+                        }
+                        else
+                        {
+                            <MudStack Row="true" Spacing="2">
+                                <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="SelectAll">Select all
+                                </MudButton>
+                                <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="ClearSelection">Clear
+                                </MudButton>
+                            </MudStack>
+                            <MudTable T="SelectableSession" Items="SelectableSessions" Dense="true" Hover="true">
+                                <HeaderContent>
+                                    <MudTh></MudTh>
+                                    <MudTh>Started</MudTh>
+                                    <MudTh>Ended</MudTh>
+                                    <MudTh>Duration</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd>
+                                        <MudCheckBox T="bool" Value="SelectedSessionIds.Contains(context.SessionId)"
+                                                     ValueChanged="v => ToggleSession(context.SessionId, v)"
+                                                     Size="Size.Small"/>
+                                    </MudTd>
+                                    <MudTd DataLabel="Started">@context.StartTime.ToLocalTime().ToString("g")</MudTd>
+                                    <MudTd DataLabel="Ended">@context.EndTime.ToLocalTime().ToString("g")</MudTd>
+                                    <MudTd DataLabel="Duration">@FormatDuration(context.MinutesWorked)</MudTd>
+                                </RowTemplate>
+                                <FooterContent>
+                                    <MudTd colspan="4">
+                                        <MudStack Row="true" Justify="Justify.FlexEnd" Class="pa-2">
+                                            <MudText Typo="Typo.body2">
+                                                <strong>Selected:</strong> @FormatDuration(SelectedTotalMinutes)
+                                            </MudText>
+                                        </MudStack>
+                                    </MudTd>
+                                </FooterContent>
+                            </MudTable>
+                        }
+                    </MudStack>
+                </MudPaper>
+                <MudPaper Class="pa-6" Elevation="2">
+                    <MudStack Spacing="3">
+                        <MudText Typo="Typo.h6">Due date</MudText>
+                        <MudDatePicker Label="Due date" @bind-Date="DueDate" Required="true"/>
+                    </MudStack>
+                </MudPaper>
+            }
+            else
+            {
+                <MudPaper Class="pa-6" Elevation="2">
+                    <MudStack Spacing="3">
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.h5">@SelectedInvoice.InvoiceNumber</MudText>
+                                <MudText Color="Color.Secondary">
+                                    Created @SelectedInvoice.CreatedAt.ToLocalTime().ToString("d")</MudText>
+                            </MudStack>
+                            <MudSpacer/>
+                            <MudChip T="string" Color="@GetStatusColor(SelectedInvoice.Status)"
+                                     Size="Size.Medium">@SelectedInvoice.Status</MudChip>
+                        </MudStack>
+                        <MudDivider/>
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">FROM</MudText>
+                                    <MudText Typo="Typo.body1">
+                                        <strong>@SelectedInvoice.OrganizationSnapshot.Name</strong></MudText>
+                                    @foreach (var line in SelectedInvoice.OrganizationSnapshot.Address.ToLines())
+                                    {
+                                        <MudText Typo="Typo.body2">@line</MudText>
+                                    }
+                                    <MudText Typo="Typo.body2">@SelectedInvoice.OrganizationSnapshot.Email</MudText>
+                                    <MudText
+                                        Typo="Typo.body2">@SelectedInvoice.OrganizationSnapshot.PhoneNumber</MudText>
+                                </MudStack>
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">TO</MudText>
+                                    <MudText Typo="Typo.body1">
+                                        <strong>@SelectedInvoice.ClientSnapshot.CompanyName</strong></MudText>
+                                    <MudText Typo="Typo.body2">
+                                        Attn: @SelectedInvoice.ClientSnapshot.ContactPerson</MudText>
+                                    @foreach (var line in SelectedInvoice.ClientSnapshot.Address.ToLines())
+                                    {
+                                        <MudText Typo="Typo.body2">@line</MudText>
+                                    }
+                                    <MudText Typo="Typo.body2">@SelectedInvoice.ClientSnapshot.Email</MudText>
+                                    <MudText Typo="Typo.body2">@SelectedInvoice.ClientSnapshot.PhoneNumber</MudText>
+                                </MudStack>
+                            </MudItem>
+                        </MudGrid>
+                        <MudDivider/>
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">PROJECT</MudText>
+                                    <MudText Typo="Typo.body1">
+                                        <strong>@SelectedInvoice.ProjectSnapshot.ProjectName</strong></MudText>
+                                    <MudText
+                                        Typo="Typo.body2">@SelectedInvoice.ProjectSnapshot.ProjectDescription</MudText>
+                                    <MudText Typo="Typo.body2">
+                                        Service: @SelectedInvoice.ProjectSnapshot.ServiceProvided</MudText>
+                                    <MudText Typo="Typo.body2">
+                                        Rate: @SelectedInvoice.ProjectSnapshot.HourlyRate.ToString("C")/hr
+                                        - @SelectedInvoice.ProjectSnapshot.BillingCycle</MudText>
+                                </MudStack>
+                            </MudItem>
+                            <MudItem xs="12" md="6">
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">DATES</MudText>
+                                    <MudText Typo="Typo.body2">Due:
+                                        <strong>@SelectedInvoice.DueDate.ToLocalTime().ToString("D")</strong></MudText>
+                                    <MudText Typo="Typo.body2">Sessions
+                                        billed: @SelectedInvoice.BilledSessionIds.Count</MudText>
+                                </MudStack>
+                            </MudItem>
+                        </MudGrid>
+                        <MudDivider/>
+                        <MudGrid>
+                            <MudItem xs="12" md="3">
+                                <MudStack Spacing="0" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">DAYS WORKED</MudText>
+                                    <MudText Typo="Typo.h6">@SelectedInvoice.TotalDaysWorked</MudText>
+                                </MudStack>
+                            </MudItem>
+                            <MudItem xs="12" md="3">
+                                <MudStack Spacing="0" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">HOURS WORKED</MudText>
+                                    <MudText Typo="Typo.h6">@FormatHours(SelectedInvoice.TotalMinutesWorked)</MudText>
+                                </MudStack>
+                            </MudItem>
+                            <MudItem xs="12" md="3">
+                                <MudStack Spacing="0" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">AVG / DAY</MudText>
+                                    <MudText
+                                        Typo="Typo.h6">@SelectedInvoice.AverageRevenuePerDay.ToString("C")</MudText>
+                                </MudStack>
+                            </MudItem>
+                            <MudItem xs="12" md="3">
+                                <MudStack Spacing="0" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">TOTAL</MudText>
+                                    <MudText Typo="Typo.h5" Color="Color.Primary">
+                                        <strong>@SelectedInvoice.TotalAmount.ToString("C")</strong></MudText>
+                                </MudStack>
+                            </MudItem>
+                        </MudGrid>
+                        @if (SelectedInvoice.DailyBreakdown.Count > 0)
+                        {
+                            <MudDivider/>
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">DAILY BREAKDOWN</MudText>
+                            <MudTable Items="@SelectedInvoice.DailyBreakdown" Dense="true" Hover="true" Elevation="0">
+                                <HeaderContent>
+                                    <MudTh>Date</MudTh>
+                                    <MudTh>Day</MudTh>
+                                    <MudTh Style="text-align:right">Hours</MudTh>
+                                    <MudTh Style="text-align:right">Amount</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="Date">@context.Date.ToString("MM/dd/yyyy")</MudTd>
+                                    <MudTd DataLabel="Day">@context.Date.DayOfWeek</MudTd>
+                                    <MudTd DataLabel="Hours"
+                                           Style="text-align:right">@FormatHours(context.MinutesWorked)</MudTd>
+                                    <MudTd DataLabel="Amount"
+                                           Style="text-align:right">@context.Amount.ToString("C")</MudTd>
+                                </RowTemplate>
+                                <FooterContent>
+                                    <MudTd Style="font-weight:bold">Total</MudTd>
+                                    <MudTd></MudTd>
+                                    <MudTd
+                                        Style="text-align:right; font-weight:bold">@FormatHours(SelectedInvoice.TotalMinutesWorked)</MudTd>
+                                    <MudTd
+                                        Style="text-align:right; font-weight:bold">@SelectedInvoice.TotalAmount.ToString("C")</MudTd>
+                                </FooterContent>
+                            </MudTable>
+                        }
+                    </MudStack>
+                </MudPaper>
+                <MudPaper Class="pa-6" Elevation="1">
+                    <MudStack Spacing="3">
+                        <MudText Typo="Typo.h6">Actions</MudText>
+                        <MudStack Row="true" Spacing="2" Wrap="Wrap.Wrap">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Visibility"
+                                       OnClick="PreviewPdfAsync" Disabled="IsBusy">
+                                @(IsPreviewing ? "Preparing preview..." : "Preview PDF")
+                            </MudButton>
+                            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.PictureAsPdf"
+                                       OnClick="DownloadPdfAsync" Disabled="IsBusy">
+                                @(IsDownloading ? "Downloading..." : "Download PDF")
+                            </MudButton>
+                            @if (CanManage)
+                            {
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                                           StartIcon="@Icons.Material.Filled.Send"
+                                           OnClick="SendInvoiceAsync" Disabled="IsBusy">
+                                    @(IsSending ? "Sending..." : "Send invoice")
+                                </MudButton>
+                            }
+                            @if (CanManage && IsDraft(SelectedInvoice.Status))
+                            {
+                                <MudButton Variant="Variant.Outlined" Color="Color.Error"
+                                           StartIcon="@Icons.Material.Filled.Delete"
+                                           OnClick="DeleteCurrentAsync" Disabled="IsBusy">
+                                    Delete invoice
+                                </MudButton>
+                            }
+                            @if (CanManage && AllowedTransitions.Count > 0)
+                            {
+                                <MudSelect T="string" Label="Update status" @bind-Value="NewStatus"
+                                           Style="min-width:160px;"
+                                           Dense="true" Margin="Margin.Dense">
+                                    @foreach (var transition in AllowedTransitions)
+                                    {
+                                        <MudSelectItem T="string" Value="transition">@transition</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="UpdateStatusAsync"
+                                           Disabled="IsBusy || string.IsNullOrWhiteSpace(NewStatus)">
+                                    @(IsBusy ? "Saving..." : "Update status")
+                                </MudButton>
+                            }
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            }
+        }
+        else if (IsCreateView)
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.h4">New invoice</MudText>
+                <MudSpacer/>
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="CloseCreate">
+                    Invoices
+                </MudButton>
+            </MudStack>
+            @if (Contracts is null)
+            {
+                <LoadingSkeleton Variant="LoadingSkeletonVariant.Form" Rows="2"/>
+            }
+            else
+            {
+                <MudPaper Class="pa-6" Elevation="2">
+                    <MudStack Spacing="4">
+                        <MudText Typo="Typo.h6">Step 1 - Select a billing contract</MudText>
+                        <MudSelect T="string" Label="Billing contract" @bind-Value="SelectedContractId" Required="true"
+                                   HelperText="Only active contracts with unbilled sessions are shown.">
+                            @foreach (var contract in Contracts)
+                            {
+                                <MudSelectItem T="string" Value="contract.Id">
+                                    @contract.ProjectName - @contract.ServiceProvided (@contract.InvoicePrefix)
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadCreateSessionsAsync"
+                                   Disabled="string.IsNullOrWhiteSpace(SelectedContractId) || IsLoadingSessions">
+                            @(IsLoadingSessions ? "Loading..." : "Load sessions")
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+                @if (IsLoadingSessions)
+                {
+                    <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="4" Columns="5"/>
+                }
+                else if (SelectableSessions is not null)
+                {
+                    <MudPaper Class="pa-6" Elevation="2">
+                        <MudStack Spacing="3">
+                            <MudStack Row="true" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.h6">Step 2 - Select sessions to include</MudText>
+                                <MudSpacer/>
+                                <MudText
+                                    Color="Color.Secondary">@SelectedSessionIds.Count of @SelectableSessions.Count selected
+                                </MudText>
+                            </MudStack>
+                            @if (SelectableSessions.Count == 0)
+                            {
+                                <MudAlert Severity="Severity.Info" Dense="true">No unbilled sessions found for this
+                                    contract.
+                                </MudAlert>
+                            }
+                            else
+                            {
+                                <MudStack Row="true" Spacing="2">
+                                    <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="SelectAll">Select all
+                                    </MudButton>
+                                    <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="ClearSelection">Clear
+                                    </MudButton>
+                                </MudStack>
+                                <MudTable T="SelectableSession" Items="SelectableSessions" Dense="true" Hover="true">
+                                    <HeaderContent>
+                                        <MudTh></MudTh>
+                                        <MudTh>Started</MudTh>
+                                        <MudTh>Ended</MudTh>
+                                        <MudTh>Duration</MudTh>
+                                    </HeaderContent>
+                                    <RowTemplate>
+                                        <MudTd>
+                                            <MudCheckBox T="bool" Value="SelectedSessionIds.Contains(context.SessionId)"
+                                                         ValueChanged="v => ToggleSession(context.SessionId, v)"
+                                                         Size="Size.Small"/>
+                                        </MudTd>
+                                        <MudTd
+                                            DataLabel="Started">@context.StartTime.ToLocalTime().ToString("g")</MudTd>
+                                        <MudTd DataLabel="Ended">@context.EndTime.ToLocalTime().ToString("g")</MudTd>
+                                        <MudTd DataLabel="Duration">@FormatDuration(context.MinutesWorked)</MudTd>
+                                    </RowTemplate>
+                                    <FooterContent>
+                                        <MudTd colspan="4">
+                                            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="4" Class="pa-2">
+                                                <MudText Typo="Typo.body2">
+                                                    <strong>Selected:</strong> @FormatDuration(SelectedTotalMinutes)
+                                                </MudText>
+                                                <MudText Typo="Typo.body2"><strong>Estimated
+                                                        total:</strong> @EstimatedTotal.ToString("C")</MudText>
+                                            </MudStack>
+                                        </MudTd>
+                                    </FooterContent>
+                                </MudTable>
+                            }
+                        </MudStack>
+                    </MudPaper>
+                    @if (SelectableSessions.Count > 0)
+                    {
+                        <MudPaper Class="pa-6" Elevation="2">
+                            <MudStack Spacing="3">
+                                <MudText Typo="Typo.h6">Step 3 - Set due date</MudText>
+                                <MudDatePicker Label="Due date" @bind-Date="DueDate" Required="true"
+                                               HelperText="The date by which payment is expected."
+                                               MinDate="DateTime.Today"/>
+                                <MudStack Row="true" Spacing="2">
+                                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="GenerateAsync"
+                                               Disabled="IsBusy || SelectedSessionIds.Count == 0 || DueDate is null">
+                                        @(IsBusy ? "Generating..." : "Generate invoice")
+                                    </MudButton>
+                                    <MudButton Variant="Variant.Text" OnClick="CloseCreate" Disabled="IsBusy">Cancel
+                                    </MudButton>
+                                </MudStack>
+                            </MudStack>
+                        </MudPaper>
+                    }
+                }
+            }
+        }
+        else
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h4">Invoices</MudText>
+                    <MudText Color="Color.Secondary">View, manage, and generate invoices for your clients.</MudText>
+                </MudStack>
+            </MudStack>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudSelect T="string" Label="Filter by status" @bind-Value="StatusFilter" Style="max-width:220px;"
+                           Dense="true" Margin="Margin.Dense">
+                    <MudSelectItem T="string" Value="@Lifecycle.AnyStatus">All statuses</MudSelectItem>
+                    @foreach (var s in Lifecycle.Names)
+                    {
+                        <MudSelectItem T="string" Value="s">@s</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudButton Variant="Variant.Outlined" OnClick="LoadListAsync"
+                           StartIcon="@Icons.Material.Filled.FilterList" Size="Size.Small">
+                    Apply
+                </MudButton>
+            </MudStack>
+            @if (InvoiceSummaries is null)
+            {
+                <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="5" Columns="6"/>
+            }
+            else if (InvoiceSummaries.Count == 0)
+            {
+                <MudPaper Class="pa-6" Elevation="1">
+                    <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Color="Color.Secondary"
+                                 Style="font-size:3rem;"/>
+                        <MudText Typo="Typo.h6">No invoices found</MudText>
+                        <MudText Color="Color.Secondary">Generate your first invoice or adjust your filters to see
+                            results here.
+                        </MudText>
+                        @if (CanManage)
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreate">
+                                Generate your first invoice
+                            </MudButton>
+                        }
+                    </MudStack>
+                </MudPaper>
+            }
+            else
+            {
+                <MudTable T="Summary" Items="InvoiceSummaries" Dense="true" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Invoice #</MudTh>
+                        <MudTh>Client</MudTh>
+                        <MudTh>Project</MudTh>
+                        <MudTh>Due date</MudTh>
+                        <MudTh>Total</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh Style="text-align:right;">Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Invoice #">@context.InvoiceNumber</MudTd>
+                        <MudTd DataLabel="Client">@context.ClientCompanyName</MudTd>
+                        <MudTd DataLabel="Project">@context.ProjectName</MudTd>
+                        <MudTd DataLabel="Due date">@context.DueDate.ToLocalTime().ToString("d")</MudTd>
+                        <MudTd DataLabel="Total">@context.TotalAmount.ToString("C")</MudTd>
+                        <MudTd DataLabel="Status">
+                            <MudChip T="string" Color="@GetStatusColor(context.Status)"
+                                     Size="Size.Small">@context.Status</MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Actions" Style="text-align:right;">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small"
+                                           Href="@Metadata.Invoice.Detail(context.Id)" title="View details"/>
+                            @if (CanManage && IsDraft(context.Status))
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                               Color="Color.Error"
+                                               OnClick="() => DeleteFromListAsync(context)" Disabled="IsBusy"
+                                               title="Delete invoice"/>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        }
+    </MudStack>
+</MudContainer>
+@if (!IsDetailView && !IsCreateView && CanManage)
+{
+    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreate"
+            title="New invoice"
+            Style="position:fixed; bottom:24px; right:24px; z-index:1000;"/>
+}

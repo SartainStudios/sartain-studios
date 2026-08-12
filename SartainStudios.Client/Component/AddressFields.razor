@@ -1,0 +1,21 @@
+<MudGrid Spacing="3">
+    <MudItem xs="12">
+        <MudTextField @bind-Value="Value.Line1" Label="Street address" Required="Required" Disabled="Disabled"/>
+    </MudItem>
+    <MudItem xs="12">
+        <MudTextField @bind-Value="Value.Line2" Label="Apartment, suite, unit (optional)" Disabled="Disabled"/>
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudTextField @bind-Value="Value.City" Label="City" Required="Required" Disabled="Disabled"/>
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudTextField @bind-Value="Value.StateOrProvince" Label="State / Province / Region" Required="Required"
+                      Disabled="Disabled"/>
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudTextField @bind-Value="Value.PostalCode" Label="Postal code" Required="Required" Disabled="Disabled"/>
+    </MudItem>
+    <MudItem xs="12" sm="6">
+        <MudTextField @bind-Value="Value.Country" Label="Country" Required="Required" Disabled="Disabled"/>
+    </MudItem>
+</MudGrid>

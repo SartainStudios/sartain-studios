@@ -1,0 +1,45 @@
+name: Deploy Web API to MonsterASP.NET
+
+on:
+  push:
+    branches:
+      - main
+      - development
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Run Unit Tests
+        run: dotnet test SartainStudios.Api.Service.Test/SartainStudios.Api.Service.Test.csproj --configuration Release --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage"
+
+      - name: App Settings Variable Substitution
+        uses: microsoft/variable-substitution@v1
+        with:
+          files: 'SartainStudios.Api/appsettings.Production.json'
+        env:
+          Authentication.Google.ClientSecret: ${{ secrets.AUTHENTICATION_GOOGLE_CLIENT_SECRET }}
+          Authentication.Jwt.SigningKey: ${{ secrets.AUTHENTICATION_JWT_KEY }}
+          Mongo.ConnectionUri: ${{ secrets.MONGO_CONNECTION_URI }}
+          Email.Username: ${{ secrets.EMAIL_USERNAME }}
+          Email.Password: ${{ secrets.EMAIL_PASSWORD }}
+
+      - name: Publish
+        run: dotnet publish SartainStudios.Api/SartainStudios.Api.csproj -c Release -o ./publish
+
+      - name: Deploy with Web Deploy
+        uses: jahbenjah/SmarterASP.NET-web-deploy@1.0.0
+        with:
+          website-name: ${{ secrets.MONSTER_SITE_NAME }}
+          server-computer-name: https://site63091.siteasp.net:8172
+          server-username: ${{ secrets.MONSTER_USERNAME }}
+          server-password: ${{ secrets.MONSTER_PASSWORD }}
+          source-path: '\publish\'

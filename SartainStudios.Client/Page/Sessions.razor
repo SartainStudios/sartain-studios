@@ -1,0 +1,197 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@using SartainStudios.Schema.WorkSession
+@attribute [Route(Metadata.Invoicing.SessionsRoute)]
+@attribute [Authorize]
+@layout Main
+<PageHeader Title='@(IsEditView ? "Edit Session" : "Sessions")'/>
+<MudContainer MaxWidth="@(IsEditView ? MaxWidth.Large : MaxWidth.ExtraLarge)" Class="my-4 my-sm-6">
+    <MudStack Spacing="4">
+        @if (IsEditView)
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudButton Variant="Variant.Text" Href="@Metadata.Invoicing.SessionsRoute"
+                           StartIcon="@Icons.Material.Filled.ArrowBack">
+                    Sessions
+                </MudButton>
+                <MudSpacer/>
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" OnClick="RefreshAsync"
+                           Disabled="IsBusy || IsLoading">
+                    Refresh
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="@Metadata.Invoicing.DashboardRoute"
+                           StartIcon="@Metadata.Invoicing.DashboardInfo.Icon">
+                    Dashboard
+                </MudButton>
+            </MudStack>
+        }
+        else
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h4">Sessions</MudText>
+                    <MudText Color="Color.Secondary">Review, edit, and manage your recorded work sessions.</MudText>
+                </MudStack>
+                <MudSpacer/>
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" OnClick="RefreshAsync"
+                           Disabled="IsBusy || IsLoading">
+                    Refresh
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="@Metadata.Invoicing.DashboardRoute"
+                           StartIcon="@Metadata.Invoicing.DashboardInfo.Icon">
+                    Dashboard
+                </MudButton>
+            </MudStack>
+        }
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+        }
+        @if (IsEditView)
+        {
+            @if (IsLoading)
+            {
+                <LoadingSkeleton Variant="LoadingSkeletonVariant.Form" Rows="4"/>
+            }
+            else if (Session is null)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true">The requested session could not be found.</MudAlert>
+            }
+            else
+            {
+                <MudPaper Class="pa-6" Elevation="1">
+                    <MudStack Spacing="3">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.h4">Edit session</MudText>
+                            <MudText Typo="Typo.subtitle1">@Session.ProjectName</MudText>
+                            <MudText Color="Color.Secondary">@Session.ServiceProvided</MudText>
+                        </MudStack>
+                        @if (!Session.CanEdit)
+                        {
+                            <MudAlert Severity="Severity.Info" Dense="true">
+                                This session is already billed and cannot be edited.
+                            </MudAlert>
+                        }
+                        else
+                        {
+                            <MudStack Row="true" Spacing="2">
+                                <MudDatePicker Label="Start date" @bind-Date="StartDate" Disabled="IsBusy"/>
+                                <MudTimePicker Label="Start time" @bind-Time="StartTime" Disabled="IsBusy"/>
+                            </MudStack>
+                            <MudStack Row="true" Spacing="2">
+                                <MudDatePicker Label="End date" @bind-Date="EndDate" Disabled="IsBusy"/>
+                                <MudTimePicker Label="End time" @bind-Time="EndTime" Disabled="IsBusy"/>
+                            </MudStack>
+                            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
+                                <MudButton Variant="Variant.Text" Href="@Metadata.Invoicing.SessionsRoute"
+                                           Disabled="IsBusy">
+                                    Cancel
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync"
+                                           Disabled="IsSaveDisabled">
+                                    @(IsBusy ? "Saving..." : "Save")
+                                </MudButton>
+                            </MudStack>
+                        }
+                    </MudStack>
+                </MudPaper>
+            }
+        }
+        else if (IsLoading)
+        {
+            <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="5" Columns="7"/>
+        }
+        else if (Items.Count == 0)
+        {
+            <MudPaper Class="pa-6" Elevation="1">
+                <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Secondary" Style="font-size:3rem;"/>
+                    <MudText Typo="Typo.h6">No sessions yet</MudText>
+                    <MudText Color="Color.Secondary">Start tracking time from a project and your sessions will appear
+                        here.
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        }
+        else
+        {
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">TOTAL SESSIONS</MudText>
+                        <MudText Typo="Typo.h5">@Items.Count</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">RUNNING</MudText>
+                        <MudText Typo="Typo.h5">@RunningCount</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">UNBILLED</MudText>
+                        <MudText Typo="Typo.h5">@UnbilledCount</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">TOTAL HOURS</MudText>
+                        <MudText Typo="Typo.h5">@FormatHours(TotalMinutes)</MudText>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+            <MudTable T="History" Items="Items" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>Project</MudTh>
+                    <MudTh>Service</MudTh>
+                    <MudTh>Started</MudTh>
+                    <MudTh>Ended</MudTh>
+                    <MudTh>Duration</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh Style="text-align:right;">Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Project">@context.ProjectName</MudTd>
+                    <MudTd DataLabel="Service">@context.ServiceProvided</MudTd>
+                    <MudTd DataLabel="Started">@context.StartTime.ToLocalTime().ToString("g")</MudTd>
+                    <MudTd DataLabel="Ended">
+                        @if (context.IsRunning)
+                        {
+                            <MudChip T="string" Color="Color.Success" Size="Size.Small">Running</MudChip>
+                        }
+                        else if (context.EndTime.HasValue)
+                        {
+                            @context.EndTime.Value.ToLocalTime().ToString("g")
+                        }
+                        else
+                        {
+                            <MudText Color="Color.Secondary">-</MudText>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Duration">@FormatHours(context.ElapsedMinutes)</MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Color="@GetStatusColor(context)"
+                                 Size="Size.Small">@GetStatusLabel(context)</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Actions" Style="text-align:right;">
+                        @if (context.CanEdit)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Color="Color.Primary" Size="Size.Small"
+                                           Href="@Metadata.Invoicing.EditSession(context.SessionId)"
+                                           Disabled="IsBusy"
+                                           title="Edit session"/>
+                        }
+                        @if (context.CanDiscard)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                                           OnClick="() => DiscardAsync(context)" Disabled="IsBusy"
+                                           title="Discard session"/>
+                        }
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudStack>
+</MudContainer>

@@ -1,0 +1,24 @@
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using MudBlazor.Services;
+using SartainStudios.Client;
+using SartainStudios.Client.Service.Authentication;
+using SartainStudios.Client.ServiceCollection;
+
+var builder = WebAssemblyHostBuilder.CreateDefault(args);
+builder.RootComponents.Add<App>("#app");
+builder.RootComponents.Add<HeadOutlet>("head::after");
+builder.Logging.SetMinimumLevel(LogLevel.Warning);
+builder.Logging.AddFilter("Microsoft.AspNetCore.Authorization", LogLevel.Warning);
+builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
+builder.Services.AddMudServices();
+builder.Services.AddScoped<TokenStore>();
+builder.Services.AddScoped<TokenRefresher>();
+builder.Services.AddScoped<BearerTokenHandler>();
+builder.Services.AddScoped<JwtAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<JwtAuthenticationStateProvider>());
+builder.Services.AddAuthorizationCore();
+builder.Services.AddApiClients(builder.Configuration, builder.HostEnvironment.BaseAddress);
+builder.Services.AddServices();
+await builder.Build().RunAsync();

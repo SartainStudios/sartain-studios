@@ -1,0 +1,204 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@using SartainStudios.Schema.Project
+@attribute [Route(Metadata.Project.Route)]
+@attribute [Authorize]
+@layout Main
+<PageHeader Title='@(SelectedProject is null ? "Projects" : SelectedProject.Name)'/>
+<MudContainer MaxWidth="@(IsDetailView ? MaxWidth.Large : MaxWidth.ExtraLarge)" Class="my-4 my-sm-6">
+    <MudStack Spacing="4">
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+        }
+        @if (IsDetailView)
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                           Href="@Metadata.Project.Route">
+                    Projects
+                </MudButton>
+                <MudSpacer/>
+                @if (CanManage && SelectedProject is not null)
+                {
+                    @if (!IsEditMode)
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Edit"
+                                   Href="@Metadata.Project.Edit(Id!)">
+                            Edit
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Text" Href="@Metadata.Project.Detail(Id!)" Disabled="IsBusy">
+                            Cancel
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="IsBusy">
+                            @(IsBusy ? "Saving..." : "Save")
+                        </MudButton>
+                    }
+                }
+            </MudStack>
+            @if (IsLoading)
+            {
+                <LoadingSkeleton Variant="LoadingSkeletonVariant.Detail" Rows="4"/>
+            }
+            else if (SelectedProject is null)
+            {
+                <MudAlert Severity="Severity.Warning">Project not found.</MudAlert>
+            }
+            else
+            {
+                <MudPaper Class="pa-4 pa-sm-6" Elevation="1">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                        <MudAvatar Color="Color.Primary" Size="Size.Large">
+                            <MudIcon Icon="@Icons.Material.Filled.Folder"/>
+                        </MudAvatar>
+                        <MudStack Spacing="0" Style="min-width:0;">
+                            <MudText Typo="Typo.h5" Class="text-truncate">@SelectedProject.Name</MudText>
+                            <MudText Color="Color.Secondary">@SelectedProject.ClientCompanyName</MudText>
+                        </MudStack>
+                        <MudSpacer/>
+                        <MudChip T="string" Size="Size.Small"
+                                 Color="@(SelectedProject.Status == "Active" ? Color.Success : Color.Default)">
+                            @SelectedProject.Status
+                        </MudChip>
+                    </MudStack>
+                </MudPaper>
+                <MudPaper Class="pa-4 pa-sm-6" Elevation="1">
+                    @if (IsEditMode)
+                    {
+                        <MudForm @ref="EditForm">
+                            <MudGrid Spacing="3">
+                                <MudItem xs="12" sm="6">
+                                    <MudSelect T="string" Label="Client" @bind-Value="ClientId" Required="true"
+                                               Disabled="IsBusy">
+                                        @foreach (var client in Clients)
+                                        {
+                                            <MudSelectItem T="string"
+                                                           Value="@client.Id">@client.CompanyName</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                </MudItem>
+                                <MudItem xs="12" sm="6">
+                                    <MudSelect T="string" Label="Status" @bind-Value="Status" Required="true"
+                                               Disabled="IsBusy">
+                                        @foreach (var status in Statuses)
+                                        {
+                                            <MudSelectItem T="string" Value="@status">@status</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                </MudItem>
+                                <MudItem xs="12">
+                                    <MudTextField @bind-Value="Name" Label="Project name" Required="true"
+                                                  Disabled="IsBusy"/>
+                                </MudItem>
+                                <MudItem xs="12">
+                                    <MudTextField @bind-Value="Description" Label="Description" Required="true"
+                                                  Lines="3" Disabled="IsBusy"/>
+                                </MudItem>
+                            </MudGrid>
+                        </MudForm>
+                    }
+                    else
+                    {
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">CLIENT</MudText>
+                                    <MudLink Href="@Metadata.Client.Detail(SelectedProject.ClientId)">
+                                        @SelectedProject.ClientCompanyName
+                                    </MudLink>
+                                </MudStack>
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">DESCRIPTION</MudText>
+                                    <MudText Typo="Typo.body2">@SelectedProject.Description</MudText>
+                                </MudStack>
+                            </MudItem>
+                        </MudGrid>
+                    }
+                </MudPaper>
+            }
+        }
+        else
+        {
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h4">Projects</MudText>
+                    <MudText Color="Color.Secondary">Manage the projects you deliver for your clients.</MudText>
+                </MudStack>
+            </MudStack>
+            @if (ProjectSummaries is null)
+            {
+                <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="5" Columns="5"/>
+            }
+            else if (ProjectSummaries.Count == 0)
+            {
+                <MudPaper Class="pa-6" Elevation="1">
+                    <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.Folder" Color="Color.Secondary" Style="font-size:3rem;"/>
+                        <MudText Typo="Typo.h6">No projects yet</MudText>
+                        <MudText Color="Color.Secondary">Create your first project so you can add billing contracts to
+                            it.
+                        </MudText>
+                        @if (CanManage)
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OpenCreate">
+                                Add your first project
+                            </MudButton>
+                        }
+                    </MudStack>
+                </MudPaper>
+            }
+            else
+            {
+                <MudTable T="Summary" Items="ProjectSummaries" Dense="true" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Name</MudTh>
+                        <MudTh>Client</MudTh>
+                        <MudTh>Description</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh Style="text-align:right;">Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Name">@context.Name</MudTd>
+                        <MudTd DataLabel="Client">@context.ClientCompanyName</MudTd>
+                        <MudTd DataLabel="Description">@context.Description</MudTd>
+                        <MudTd DataLabel="Status">
+                            <MudChip T="string" Size="Size.Small"
+                                     Color="@(context.Status == "Active" ? Color.Success : Color.Default)">@context.Status
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Actions" Style="text-align:right;">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" Size="Size.Small"
+                                           Href="@Metadata.Project.Detail(context.Id)" title="View project"/>
+                            @if (CanManage)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                               Href="@Metadata.Project.Edit(context.Id)" title="Edit project"/>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                               Color="Color.Error"
+                                               OnClick="() => DeleteAsync(context)" Disabled="IsBusy"
+                                               title="Delete project"/>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        }
+    </MudStack>
+</MudContainer>
+<ProjectCreateDialog Visible="@ShowCreate"
+                     VisibleChanged="OnCreateDialogVisibleChangedAsync"
+                     IsBusy="IsBusy"
+                     Clients="Clients"
+                     OnCreate="CreateAsync"/>
+@if (!IsDetailView && CanManage)
+{
+    <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreate"
+            title="New project"
+            Style="position:fixed; bottom:24px; right:24px; z-index:1000;"/>
+}

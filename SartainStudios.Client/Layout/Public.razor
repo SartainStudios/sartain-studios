@@ -1,0 +1,16 @@
+@using Metadata = SartainStudios.Client.Page.Metadata
+@inherits LayoutComponentBase
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudLink Href="@Metadata.Home.IndexRoute"
+                 Typo="Typo.h5"
+                 Color="Color.Inherit"
+                 Underline="Underline.None"
+                 Class="ml-3">
+            Sartain Studios LLC
+        </MudLink>
+    </MudAppBar>
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
