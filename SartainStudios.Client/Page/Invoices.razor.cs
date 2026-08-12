@@ -26,6 +26,8 @@ public sealed partial class Invoices(
 {
     private static readonly TimeSpan AutoSelectGapThreshold = TimeSpan.FromHours(24);
     private bool _createRequestHandled;
+    private TaskCompletionSource<bool>? _confirmCompletion;
+    private bool _initialParametersHandled;
     private string? _lastId;
 
     [Parameter]
@@ -41,12 +43,25 @@ public sealed partial class Invoices(
     public bool EditRequested { get; set; }
 
     private List<Summary>? InvoiceSummaries { get; set; }
+    private List<Summary>? FilteredInvoiceSummaries { get; set; }
     private List<BillingSummary>? Contracts { get; set; }
     private List<SelectableSession>? SelectableSessions { get; set; }
     private InvoiceDetail? SelectedInvoice { get; set; }
     private HashSet<string> SelectedSessionIds { get; set; } = [];
     private string CurrentRole { get; set; } = string.Empty;
-    private string StatusFilter { get; set; } = Lifecycle.AnyStatus;
+
+    private string StatusFilter
+    {
+        get;
+        set
+        {
+            if (string.Equals(field, value, StringComparison.OrdinalIgnoreCase))
+                return;
+            field = value;
+            ApplyStatusFilter();
+        }
+    } = Lifecycle.AnyStatus;
+
     private string SelectedContractId { get; set; } = string.Empty;
     private string NewStatus { get; set; } = string.Empty;
     private DateTime? DueDate { get; set; } = CalculateDefaultDueDate(DateTime.Today);
@@ -59,6 +74,15 @@ public sealed partial class Invoices(
     private bool IsSending { get; set; }
     private bool IsEditMode { get; set; }
     private IReadOnlyList<string> AllowedTransitions { get; set; } = [];
+
+    private bool ShowConfirm { get; set; }
+    private string ConfirmTitle { get; set; } = string.Empty;
+    private string ConfirmMessage { get; set; } = string.Empty;
+    private string? ConfirmDetails { get; set; }
+    private string ConfirmButtonText { get; set; } = "Confirm";
+    private Color ConfirmButtonColor { get; set; } = Color.Primary;
+    private string ConfirmIcon { get; set; } = Icons.Material.Filled.HelpOutline;
+    private string? ConfirmButtonIcon { get; set; }
 
     private bool CanManage => string.Equals(CurrentRole, nameof(RoleType.Owner), StringComparison.OrdinalIgnoreCase)
                               || string.Equals(CurrentRole, nameof(RoleType.Administrator),
@@ -82,12 +106,20 @@ public sealed partial class Invoices(
 
     protected override async Task OnInitializedAsync()
     {
-        var state = await authenticationStateProvider.GetAuthenticationStateAsync();
+        var stateTask = authenticationStateProvider.GetAuthenticationStateAsync();
+        var listTask = IsDetailView || CreateRequested ? null : invoiceService.ListAsync();
+        var invoiceTask = IsDetailView ? invoiceService.GetAsync(Id!) : null;
+
+        var state = await stateTask;
         CurrentRole = state.User.FindFirst(ClaimTypes.Role)?.Value ?? "";
         _lastId = Id;
         IsEditMode = IsDetailView && EditRequested && CanManage;
-        if (IsDetailView)
-            await LoadInvoiceAsync();
+        _createRequestHandled = CreateRequested && !IsDetailView && CanManage;
+
+        if (invoiceTask is not null)
+            await LoadInvoiceAsync(invoiceTask);
+        else if (listTask is not null)
+            await LoadListAsync(listTask);
         else if (IsCreateView)
             await LoadCreateContractsAsync();
         else
@@ -98,6 +130,13 @@ public sealed partial class Invoices(
     {
         if (!CanManage)
             CreateRequested = false;
+
+        if (!_initialParametersHandled)
+        {
+            _initialParametersHandled = true;
+            return;
+        }
+
         if (CreateRequested && !_createRequestHandled && !IsDetailView && CanManage)
         {
             _createRequestHandled = true;
@@ -135,13 +174,19 @@ public sealed partial class Invoices(
             await LoadEditableSessionsAsync();
     }
 
-    private async Task LoadListAsync()
+    private Task LoadListAsync()
+    {
+        return LoadListAsync(invoiceService.ListAsync());
+    }
+
+    private async Task LoadListAsync(Task<IReadOnlyList<Summary>> listTask)
     {
         ErrorMessage = null;
         InvoiceSummaries = null;
+        FilteredInvoiceSummaries = null;
         try
         {
-            var list = await invoiceService.ListAsync(status: StatusFilter);
+            var list = await listTask;
             InvoiceSummaries = list.ToList();
         }
         catch (Exception ex)
@@ -150,22 +195,63 @@ public sealed partial class Invoices(
             ErrorMessage = ex.Message;
             InvoiceSummaries = [];
         }
+        finally
+        {
+            ApplyStatusFilter();
+        }
     }
 
-    private async Task LoadInvoiceAsync()
+    private void ApplyStatusFilter()
+    {
+        if (InvoiceSummaries is null)
+        {
+            FilteredInvoiceSummaries = null;
+            return;
+        }
+
+        FilteredInvoiceSummaries = Lifecycle.TryNormalize(StatusFilter, out var status)
+            ? InvoiceSummaries.Where(invoice => Lifecycle.Is(invoice.Status, status)).ToList()
+            : InvoiceSummaries;
+    }
+
+    private Task LoadInvoiceAsync()
+    {
+        return string.IsNullOrWhiteSpace(Id)
+            ? Task.CompletedTask
+            : LoadInvoiceAsync(invoiceService.GetAsync(Id));
+    }
+
+    private async Task LoadInvoiceAsync(Task<InvoiceDetail> invoiceTask)
     {
         if (string.IsNullOrWhiteSpace(Id))
             return;
+        var id = Id;
+        var editing = IsEditMode;
         IsLoading = true;
+        IsLoadingSessions = editing;
         ErrorMessage = null;
         ClearEditState();
+
+        var sessionsTask = editing ? TryGetEditableSessionsAsync(id) : null;
         try
         {
-            SelectedInvoice = await invoiceService.GetAsync(Id);
+            SelectedInvoice = await invoiceTask;
             AllowedTransitions = Lifecycle.AllowedTransitionsFrom(SelectedInvoice.Status);
             NewStatus = AllowedTransitions.FirstOrDefault() ?? string.Empty;
-            if (IsEditMode)
-                await LoadEditableSessionsAsync();
+            IsLoading = false;
+
+            if (sessionsTask is null)
+                return;
+
+            StateHasChanged();
+            if (!Lifecycle.IsDraft(SelectedInvoice.Status))
+            {
+                ErrorMessage = "Only draft invoices can be edited.";
+                navigationManager.NavigateTo(Metadata.Invoice.Detail(id));
+                return;
+            }
+
+            ApplyEditableSessions(await sessionsTask);
         }
         catch (Exception ex)
         {
@@ -175,6 +261,7 @@ public sealed partial class Invoices(
         finally
         {
             IsLoading = false;
+            IsLoadingSessions = false;
         }
     }
 
@@ -189,6 +276,7 @@ public sealed partial class Invoices(
             if (Contracts.Count == 1)
             {
                 SelectedContractId = Contracts[0].Id;
+                StateHasChanged();
                 await LoadCreateSessionsAsync();
             }
         }
@@ -241,20 +329,41 @@ public sealed partial class Invoices(
         IsLoadingSessions = true;
         try
         {
-            var sessions = await invoiceService.GetEditableSessionsAsync(Id);
-            SelectableSessions = sessions.ToList();
-            SelectedSessionIds = SelectedInvoice.BilledSessionIds.ToHashSet();
-            DueDate = SelectedInvoice.DueDate.ToLocalTime().Date;
-        }
-        catch (Exception ex)
-        {
-            snackbar.Add(ex.Message, Severity.Error);
-            ErrorMessage = ex.Message;
+            ApplyEditableSessions(await TryGetEditableSessionsAsync(Id));
         }
         finally
         {
             IsLoadingSessions = false;
         }
+    }
+
+    private async Task<(IReadOnlyList<SelectableSession>? Sessions, string? Error)> TryGetEditableSessionsAsync(
+        string invoiceId)
+    {
+        try
+        {
+            return (await invoiceService.GetEditableSessionsAsync(invoiceId), null);
+        }
+        catch (Exception ex)
+        {
+            return (null, ex.Message);
+        }
+    }
+
+    private void ApplyEditableSessions((IReadOnlyList<SelectableSession>? Sessions, string? Error) result)
+    {
+        if (result.Sessions is null)
+        {
+            snackbar.Add(result.Error ?? "Unable to load sessions.", Severity.Error);
+            ErrorMessage = result.Error;
+            return;
+        }
+
+        if (SelectedInvoice is null)
+            return;
+        SelectableSessions = result.Sessions.ToList();
+        SelectedSessionIds = SelectedInvoice.BilledSessionIds.ToHashSet();
+        DueDate = SelectedInvoice.DueDate.ToLocalTime().Date;
     }
 
     private static Color GetStatusColor(string status)
@@ -334,7 +443,8 @@ public sealed partial class Invoices(
             AllowedTransitions = Lifecycle.AllowedTransitionsFrom(SelectedInvoice.Status);
             NewStatus = AllowedTransitions.FirstOrDefault() ?? string.Empty;
             snackbar.Add($"Invoice status updated to {SelectedInvoice.Status}.", Severity.Success);
-            await LoadListAsync();
+            InvoiceSummaries = null;
+            FilteredInvoiceSummaries = null;
         }
         catch (Exception ex)
         {
@@ -397,12 +507,49 @@ public sealed partial class Invoices(
         }
     }
 
+    private Task<bool> ConfirmAsync(
+        string title,
+        string message,
+        string? details,
+        string confirmText,
+        Color confirmColor,
+        string icon,
+        string? confirmIcon = null)
+    {
+        _confirmCompletion?.TrySetResult(false);
+        ConfirmTitle = title;
+        ConfirmMessage = message;
+        ConfirmDetails = details;
+        ConfirmButtonText = confirmText;
+        ConfirmButtonColor = confirmColor;
+        ConfirmIcon = icon;
+        ConfirmButtonIcon = confirmIcon;
+        _confirmCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        ShowConfirm = true;
+        StateHasChanged();
+        return _confirmCompletion.Task;
+    }
+
+    private void CompleteConfirm(bool result)
+    {
+        ShowConfirm = false;
+        var completion = _confirmCompletion;
+        _confirmCompletion = null;
+        completion?.TrySetResult(result);
+    }
+
     private async Task SendInvoiceAsync()
     {
         if (string.IsNullOrWhiteSpace(Id) || SelectedInvoice is null)
             return;
-        var confirmed = await jsRuntime.InvokeAsync<bool>("confirm",
-            $"Send invoice {SelectedInvoice.InvoiceNumber} to {SelectedInvoice.ClientSnapshot.Email}?");
+        var confirmed = await ConfirmAsync(
+            "Send invoice",
+            $"Send invoice {SelectedInvoice.InvoiceNumber} to {SelectedInvoice.ClientSnapshot.Email}?",
+            "The client will receive the invoice as a PDF attachment.",
+            "Send invoice",
+            Color.Primary,
+            Icons.Material.Filled.Send,
+            Icons.Material.Filled.Send);
         if (!confirmed) return;
         IsSending = true;
         IsBusy = true;
@@ -413,7 +560,8 @@ public sealed partial class Invoices(
             AllowedTransitions = Lifecycle.AllowedTransitionsFrom(SelectedInvoice.Status);
             NewStatus = AllowedTransitions.FirstOrDefault() ?? string.Empty;
             snackbar.Add("Invoice sent.", Severity.Success);
-            await LoadListAsync();
+            InvoiceSummaries = null;
+            FilteredInvoiceSummaries = null;
         }
         catch (Exception ex)
         {
@@ -428,8 +576,14 @@ public sealed partial class Invoices(
 
     private async Task DeleteFromListAsync(Summary invoice)
     {
-        var confirmed = await jsRuntime.InvokeAsync<bool>("confirm",
-            $"Delete invoice {invoice.InvoiceNumber}? This cannot be undone and its number will be reused.");
+        var confirmed = await ConfirmAsync(
+            "Delete invoice",
+            $"Delete invoice {invoice.InvoiceNumber}?",
+            "This cannot be undone and its number will be reused.",
+            "Delete",
+            Color.Error,
+            Icons.Material.Filled.DeleteForever,
+            Icons.Material.Filled.Delete);
         if (!confirmed) return;
         IsBusy = true;
         try
@@ -453,8 +607,14 @@ public sealed partial class Invoices(
     {
         if (string.IsNullOrWhiteSpace(Id) || SelectedInvoice is null)
             return;
-        var confirmed = await jsRuntime.InvokeAsync<bool>("confirm",
-            $"Delete invoice {SelectedInvoice.InvoiceNumber}? This cannot be undone and its number will be reused.");
+        var confirmed = await ConfirmAsync(
+            "Delete invoice",
+            $"Delete invoice {SelectedInvoice.InvoiceNumber}?",
+            "This cannot be undone and its number will be reused.",
+            "Delete",
+            Color.Error,
+            Icons.Material.Filled.DeleteForever,
+            Icons.Material.Filled.Delete);
         if (!confirmed) return;
         IsBusy = true;
         try

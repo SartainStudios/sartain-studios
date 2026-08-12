@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using SartainStudios.Client.Schema;
 using SartainStudios.Client.Schema.Api;
 using SartainStudios.Client.Service.Authentication;
+using SartainStudios.Client.Service.Caching;
 using SartainStudios.Schema.Organization;
 
 namespace SartainStudios.Client.Service;
@@ -9,7 +10,8 @@ namespace SartainStudios.Client.Service;
 public sealed class Organization(
     HttpClient httpClient,
     TokenStore tokenStore,
-    JwtAuthenticationStateProvider stateProvider)
+    JwtAuthenticationStateProvider stateProvider,
+    DataCache cache)
 {
     public async Task<IReadOnlyList<OrganizationSummary>> ListMineAsync()
     {
@@ -58,6 +60,7 @@ public sealed class Organization(
         await EnsureSuccessAsync(response);
         var body = await response.Content.ReadFromJsonAsync<SwitchResponse>()
                    ?? throw new InvalidOperationException("Empty switch response.");
+        cache.Clear();
         await tokenStore.SaveAsync(new StoredSession
         {
             AccessToken = body.AccessToken,

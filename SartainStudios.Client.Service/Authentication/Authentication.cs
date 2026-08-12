@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using SartainStudios.Client.Schema;
+using SartainStudios.Client.Service.Caching;
 using SartainStudios.Schema.Authentication;
 using ApiResponse = SartainStudios.Client.Schema.Api.Response;
 
@@ -8,7 +9,8 @@ namespace SartainStudios.Client.Service.Authentication;
 public sealed class Authentication(
     HttpClient httpClient,
     TokenStore tokenStore,
-    JwtAuthenticationStateProvider stateProvider)
+    JwtAuthenticationStateProvider stateProvider,
+    DataCache cache)
 {
     private const string BaseRoute = "api/authentication";
 
@@ -74,6 +76,7 @@ public sealed class Authentication(
             }
 
         await tokenStore.ClearAsync();
+        cache.Clear();
         stateProvider.NotifyChanged();
     }
 
@@ -103,6 +106,7 @@ public sealed class Authentication(
 
     private async Task PersistAsync(Response response)
     {
+        cache.Clear();
         await tokenStore.SaveAsync(new StoredSession
         {
             AccessToken = response.AccessToken,

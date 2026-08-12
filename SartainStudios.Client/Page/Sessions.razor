@@ -141,7 +141,9 @@
                     </MudPaper>
                 </MudItem>
             </MudGrid>
-            <MudTable T="History" Items="Items" Dense="true" Hover="true">
+            <MudTable T="History" Items="Items" Dense="true" Hover="true"
+                      Virtualize="true" ItemSize="40" OverscanCount="6"
+                      FixedHeader="true" Height="60vh">
                 <HeaderContent>
                     <MudTh>Project</MudTh>
                     <MudTh>Service</MudTh>

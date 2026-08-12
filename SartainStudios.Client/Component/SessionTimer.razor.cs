@@ -14,6 +14,9 @@ public sealed partial class SessionTimer(
 {
     [Parameter] public IReadOnlyList<Summary> Contracts { get; set; } = [];
     [Parameter] public OnboardingStatusResult? Onboarding { get; set; }
+
+    [Parameter] public Task<State>? InitialStateTask { get; set; }
+
     [Parameter] public EventCallback OnChanged { get; set; }
     [Parameter] public EventCallback<TimeSpan> OnElapsedChanged { get; set; }
     private State? State { get; set; }
@@ -61,6 +64,7 @@ public sealed partial class SessionTimer(
 
     private TimeSpan ServerOffset { get; set; }
     private CancellationTokenSource? ClockCancellation { get; set; }
+    private bool InitialStateConsumed { get; set; }
 
     public void Dispose()
     {
@@ -94,7 +98,7 @@ public sealed partial class SessionTimer(
         ErrorMessage = null;
         try
         {
-            State = await workSession.GetCurrentAsync();
+            State = await GetStateAsync();
             ServerOffset = State.ServerTime - DateTime.UtcNow;
             if (State.HasRunningSession && State.CurrentSession is not null)
             {
@@ -120,6 +124,14 @@ public sealed partial class SessionTimer(
         {
             IsLoading = false;
         }
+    }
+
+    private Task<State> GetStateAsync()
+    {
+        if (InitialStateConsumed || InitialStateTask is null)
+            return workSession.GetCurrentAsync();
+        InitialStateConsumed = true;
+        return InitialStateTask;
     }
 
     private void StartClock()

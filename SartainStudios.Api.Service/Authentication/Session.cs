@@ -8,8 +8,10 @@ using OrganizationEntity = SartainStudios.Schema.DatabaseEntity.Organization;
 
 namespace SartainStudios.Api.Service.Authentication;
 
-public sealed class Session(Database database, Token token)
+public sealed class Session(Database database, Token token, TimeProvider timeProvider)
 {
+    private DateTime Now => timeProvider.GetUtcNow().UtcDateTime;
+
     public async Task<IssuedSession> IssueAsync(UserProfile user,
         SartainStudios.Schema.DatabaseEntity.Membership membership,
         OrganizationEntity organization, IdentityProvider provider)
@@ -32,7 +34,7 @@ public sealed class Session(Database database, Token token)
     public async Task<AuthenticationSession?> FindActiveByRefreshTokenAsync(string refreshToken)
     {
         var refreshTokenHash = token.HashRefreshToken(refreshToken);
-        var now = DateTime.UtcNow;
+        var now = Now;
         return await database.AuthenticationSessions
             .Find(x => x.RefreshTokenHash == refreshTokenHash && x.RevokedAt == null && x.ExpiresAt > now)
             .FirstOrDefaultAsync();
@@ -60,7 +62,7 @@ public sealed class Session(Database database, Token token)
     private async Task RevokeAsync(AuthenticationSession? session)
     {
         if (session is null || session.RevokedAt is not null) return;
-        var now = DateTime.UtcNow;
+        var now = Now;
         session.RevokedAt = now;
         session.UpdatedAt = now;
         await database.AuthenticationSessions.ReplaceOneAsync(x => x.Id == session.Id, session);

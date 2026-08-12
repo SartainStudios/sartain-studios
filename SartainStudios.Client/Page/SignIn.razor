@@ -11,7 +11,8 @@
                 <MudText Typo="Typo.h4" Class="font-weight-bold">Sign in</MudText>
                 <MudText Typo="Typo.body2">(creates account if you do not have one.)</MudText>
             </MudStack>
-            <GoogleSignInButton RedirectUrl="@ReturnUrl"/>
+            <GoogleSignInButton RedirectUrl="@ReturnUrl" OnBusyChanged="OnGoogleBusyChanged"/>
+
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
                 <MudDivider Style="flex: 1 1 auto;"/>
                 <MudText Typo="Typo.body2" Class="mud-text-secondary" Style="white-space: nowrap;">or use email
@@ -52,17 +53,18 @@
                     Forgot password?
                 </MudLink>
             </MudStack>
+
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
                        OnClick="SubmitAsync"
-                       Disabled="IsBusy"
+                       Disabled="@(IsBusy || IsGoogleBusy)"
                        FullWidth="true"
                        Size="Size.Large"
                        Class="mt-2">
                 @if (IsBusy)
                 {
                     <MudProgressCircular Class="me-2" Size="Size.Small" Indeterminate="true"/>
-                    <span>Continuing...</span>
+                    <span>Signing you in...</span>
                 }
                 else
                 {
@@ -72,3 +74,10 @@
         </MudStack>
     </MudPaper>
 </MudContainer>
+
+<MudOverlay Visible="IsBusy" DarkBackground="true" ZIndex="9999">
+    <MudStack AlignItems="AlignItems.Center" Spacing="4">
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large"/>
+        <MudText Typo="Typo.h6" Align="Align.Center" Style="color: #FFFFFF;">@BusyMessage</MudText>
+    </MudStack>
+</MudOverlay>

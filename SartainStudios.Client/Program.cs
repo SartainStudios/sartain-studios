@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
 using SartainStudios.Client;
 using SartainStudios.Client.Service.Authentication;
+using SartainStudios.Client.Service.Caching;
 using SartainStudios.Client.ServiceCollection;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -13,6 +14,8 @@ builder.Logging.SetMinimumLevel(LogLevel.Warning);
 builder.Logging.AddFilter("Microsoft.AspNetCore.Authorization", LogLevel.Warning);
 builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
 builder.Services.AddMudServices();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<DataCache>();
 builder.Services.AddScoped<TokenStore>();
 builder.Services.AddScoped<TokenRefresher>();
 builder.Services.AddScoped<BearerTokenHandler>();

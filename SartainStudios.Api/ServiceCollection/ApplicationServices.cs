@@ -6,6 +6,7 @@ using SartainStudios.Api.Service.Data;
 using SartainStudios.Api.Service.Health;
 using SartainStudios.Api.Service.Invoice;
 using SartainStudios.Api.Service.Membership;
+using SartainStudios.Api.Service.Onboarding;
 using SartainStudios.Api.Service.Organization;
 using SartainStudios.Api.Service.Project;
 using SartainStudios.Api.Service.Timekeeping;
@@ -42,6 +43,7 @@ public static class ApplicationServices
         services.AddScoped<AuthenticationService>();
         services.AddScoped<Access>();
         services.AddScoped<WorkSessionService>();
+        services.AddScoped<OnboardingService>();
         services.AddScoped<HealthService>();
     }
 }

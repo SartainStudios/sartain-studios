@@ -24,7 +24,7 @@ public sealed class SessionTests
     {
         var harness = new MongoHarness();
         var token = new Token(JwtSettings);
-        var service = new Session(harness.Database, token);
+        var service = new Session(harness.Database, token, new StaticTimeProvider(DateTime.UtcNow));
         var user = new UserProfile { DisplayName = "Session User" };
         var organization = new OrganizationEntity { Name = "Acme" };
         var membership = new SartainStudios.Schema.DatabaseEntity.Membership
@@ -53,7 +53,7 @@ public sealed class SessionTests
     {
         var harness = new MongoHarness();
         var token = new Token(JwtSettings);
-        var service = new Session(harness.Database, token);
+        var service = new Session(harness.Database, token, new StaticTimeProvider(DateTime.UtcNow));
         var refreshToken = "refresh-token";
         var active = new AuthenticationSession
         {
@@ -95,7 +95,7 @@ public sealed class SessionTests
     {
         var harness = new MongoHarness();
         var token = new Token(JwtSettings);
-        var service = new Session(harness.Database, token);
+        var service = new Session(harness.Database, token, new StaticTimeProvider(DateTime.UtcNow));
 
         await service.RevokeAsync(ObjectId.Empty);
 
@@ -107,7 +107,7 @@ public sealed class SessionTests
     {
         var harness = new MongoHarness();
         var token = new Token(JwtSettings);
-        var service = new Session(harness.Database, token);
+        var service = new Session(harness.Database, token, new StaticTimeProvider(DateTime.UtcNow));
         var session = new AuthenticationSession
         {
             UserId = ObjectId.GenerateNewId(),
@@ -130,7 +130,7 @@ public sealed class SessionTests
     {
         var harness = new MongoHarness();
         var token = new Token(JwtSettings);
-        var service = new Session(harness.Database, token);
+        var service = new Session(harness.Database, token, new StaticTimeProvider(DateTime.UtcNow));
         var rawRefreshToken = "raw-refresh-token";
         var session = new AuthenticationSession
         {
