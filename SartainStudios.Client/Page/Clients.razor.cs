@@ -53,6 +53,11 @@ public sealed partial class Clients(
     private bool IsDetailView => !string.IsNullOrEmpty(Id);
     private decimal TotalBilled => Invoices.Sum(i => i.TotalAmount);
 
+    public void Dispose()
+    {
+        cache.Changed -= OnCacheChanged;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         _lastId = Id;
@@ -66,11 +71,6 @@ public sealed partial class Clients(
         IsEditMode = EditRequested && CanManage;
 
         await dataTask;
-    }
-
-    public void Dispose()
-    {
-        cache.Changed -= OnCacheChanged;
     }
 
     private void OnCacheChanged(string key)

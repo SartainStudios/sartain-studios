@@ -16,7 +16,10 @@ public sealed class Editing(Database database, IMongoClient mongoClient, Draft d
         return result.MatchedCount > 0;
     }
 
-    public async Task<bool> TryReplaceOnDraftInvoiceAsync(WorkSessionEntity session, InvoiceEntity invoice)
+    public async Task<bool> TryReplaceOnDraftInvoiceAsync(
+        WorkSessionEntity session,
+        InvoiceEntity invoice,
+        TimeZoneInfo userTimeZone)
     {
         using var mongoTransaction = await mongoClient.StartSessionAsync();
         mongoTransaction.StartTransaction();
@@ -32,7 +35,7 @@ public sealed class Editing(Database database, IMongoClient mongoClient, Draft d
                 return false;
             }
 
-            await draftInvoice.RecalculateOrDeleteAsync(mongoTransaction, invoice);
+            await draftInvoice.RecalculateOrDeleteAsync(mongoTransaction, invoice, userTimeZone);
             await mongoTransaction.CommitTransactionAsync();
             return true;
         }
@@ -48,7 +51,10 @@ public sealed class Editing(Database database, IMongoClient mongoClient, Draft d
         return database.TimeSessions.DeleteOneAsync(x => x.Id == session.Id);
     }
 
-    public async Task<bool> TryDiscardFromDraftInvoiceAsync(WorkSessionEntity session, InvoiceEntity invoice)
+    public async Task<bool> TryDiscardFromDraftInvoiceAsync(
+        WorkSessionEntity session,
+        InvoiceEntity invoice,
+        TimeZoneInfo userTimeZone)
     {
         using var mongoTransaction = await mongoClient.StartSessionAsync();
         mongoTransaction.StartTransaction();
@@ -67,7 +73,7 @@ public sealed class Editing(Database database, IMongoClient mongoClient, Draft d
                 .Find(mongoTransaction, x => x.InvoiceId == invoice.Id && x.OrganizationId == invoice.OrganizationId)
                 .AnyAsync();
             if (remaining)
-                await draftInvoice.RecalculateOrDeleteAsync(mongoTransaction, invoice);
+                await draftInvoice.RecalculateOrDeleteAsync(mongoTransaction, invoice, userTimeZone);
             else
                 await database.Invoices.DeleteOneAsync(mongoTransaction, x => x.Id == invoice.Id);
             await mongoTransaction.CommitTransactionAsync();

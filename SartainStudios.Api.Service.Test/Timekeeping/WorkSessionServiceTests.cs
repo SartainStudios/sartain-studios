@@ -300,7 +300,7 @@ public sealed class WorkSessionServiceTests
         var now = new DateTime(2026, 8, 11, 12, 0, 0, DateTimeKind.Utc);
         var request = new UpdateRequest(now.AddHours(-2), now.AddHours(-1));
 
-        var result = await service.UpdateAsync("not-valid", request);
+        var result = await service.UpdateAsync("not-valid", request, "America/Chicago");
 
         Assert.True(result.IsFailure);
         Assert.Equal(WorkSessionErrors.InvalidId, result.Error);
@@ -314,7 +314,7 @@ public sealed class WorkSessionServiceTests
         var now = new DateTime(2026, 8, 11, 12, 0, 0, DateTimeKind.Utc);
         var request = new UpdateRequest(now.AddHours(-2), now.AddHours(-1));
 
-        var result = await service.UpdateAsync(ObjectId.GenerateNewId().ToString(), request);
+        var result = await service.UpdateAsync(ObjectId.GenerateNewId().ToString(), request, "America/Chicago");
 
         Assert.True(result.IsFailure);
         Assert.Equal("WorkSession.NotFound", result.Error.Code);
@@ -326,7 +326,7 @@ public sealed class WorkSessionServiceTests
         var harness = new MongoHarness();
         var (service, _, _) = CreateAuthenticatedService(harness);
 
-        var result = await service.DiscardAsync("not-valid");
+        var result = await service.DiscardAsync("not-valid", "America/Chicago");
 
         Assert.True(result.IsFailure);
         Assert.Equal(WorkSessionErrors.InvalidId, result.Error);
@@ -338,7 +338,7 @@ public sealed class WorkSessionServiceTests
         var harness = new MongoHarness();
         var (service, _, _) = CreateAuthenticatedService(harness);
 
-        var result = await service.DiscardAsync(ObjectId.GenerateNewId().ToString());
+        var result = await service.DiscardAsync(ObjectId.GenerateNewId().ToString(), "America/Chicago");
 
         Assert.True(result.IsFailure);
         Assert.Equal("WorkSession.NotFound", result.Error.Code);
@@ -362,7 +362,7 @@ public sealed class WorkSessionServiceTests
             EndTime = now.UtcDateTime.AddHours(-1)
         });
 
-        var result = await service.DiscardAsync(sessionId.ToString());
+        var result = await service.DiscardAsync(sessionId.ToString(), "America/Chicago");
 
         Assert.True(result.IsSuccess);
         Assert.Empty(harness.TimeSessions.Documents);

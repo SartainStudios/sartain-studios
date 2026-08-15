@@ -38,7 +38,7 @@ public sealed class BillingContract(HttpClient httpClient, DataCache cache)
 
     public async Task<Summary> UpdateAsync(string id, UpdateRequest request)
     {
-        var response = await httpClient.PutAsJsonAsync($"api/billing-contracts/{id}", request);
+        var response = await httpClient.PutAsJsonAsync(UserTimeZone.Append($"api/billing-contracts/{id}"), request);
         await EnsureSuccessAsync(response);
         var updated = await response.Content.ReadFromJsonAsync<Summary>()
                       ?? throw new InvalidOperationException("Empty billing contract response.");

@@ -176,11 +176,11 @@ public sealed class DataCache(TimeProvider timeProvider)
 
     private sealed class Entry
     {
+        public volatile bool IsRevalidating;
         public Lock Gate { get; } = new();
         public object? Value { get; set; }
         public bool HasValue { get; set; }
         public DateTimeOffset StoredAt { get; set; }
         public object? Pending { get; set; }
-        public volatile bool IsRevalidating;
     }
 }

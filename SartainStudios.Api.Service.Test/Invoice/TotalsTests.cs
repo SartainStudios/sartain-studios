@@ -18,7 +18,7 @@ public sealed class TotalsTests
             }
         };
 
-        var totals = Totals.Calculate(sessions, 60m);
+        var totals = Totals.Calculate(sessions, 60m, TimeZoneInfo.FindSystemTimeZoneById("America/Chicago"));
 
         Assert.Equal(60, totals.TotalMinutesWorked);
         Assert.Equal(1, totals.TotalDaysWorked);
@@ -29,7 +29,7 @@ public sealed class TotalsTests
     [Fact]
     public void Calculate_ReturnsZeroTotalsWhenNoSessions()
     {
-        var totals = Totals.Calculate([], 100m);
+        var totals = Totals.Calculate([], 100m, TimeZoneInfo.FindSystemTimeZoneById("America/Chicago"));
 
         Assert.Equal(0, totals.TotalMinutesWorked);
         Assert.Equal(0, totals.TotalDaysWorked);
@@ -49,7 +49,8 @@ public sealed class TotalsTests
             }
         };
 
-        var breakdown = Totals.CalculateDailyBreakdown(sessions, 60m);
+        var breakdown =
+            Totals.CalculateDailyBreakdown(sessions, 60m, TimeZoneInfo.FindSystemTimeZoneById("America/Chicago"));
 
         var entry = Assert.Single(breakdown);
         Assert.Equal(new DateOnly(2024, 1, 1), entry.Date);

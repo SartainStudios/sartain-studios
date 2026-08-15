@@ -1,4 +1,5 @@
 using MongoDB.Bson;
+using MongoDB.Driver;
 using SartainStudios.Api.Service.Test.Infrastructure;
 using SartainStudios.Api.Service.Timekeeping;
 using BillingContractEntity = SartainStudios.Schema.DatabaseEntity.BillingContract;
@@ -229,7 +230,7 @@ public sealed class TrackerTests
         harness.TimeSessions.WriteFailure = MongoErrors.Uncategorized();
         var tracker = new Tracker(harness.Database);
 
-        await Assert.ThrowsAsync<MongoDB.Driver.MongoWriteException>(() =>
+        await Assert.ThrowsAsync<MongoWriteException>(() =>
             tracker.TryStartAsync(Session(ObjectId.GenerateNewId(), ObjectId.GenerateNewId(), Now)));
     }
 

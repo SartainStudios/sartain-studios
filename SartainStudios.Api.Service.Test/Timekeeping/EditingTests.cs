@@ -117,7 +117,8 @@ public sealed class EditingTests
         var updated = Session(organizationId, Now.AddHours(-2), Now.AddHours(-1), sessionId, invoice.Id);
         var editing = CreateEditing(harness);
 
-        var result = await editing.TryReplaceOnDraftInvoiceAsync(updated, invoice);
+        var result = await editing.TryReplaceOnDraftInvoiceAsync(updated, invoice,
+            TimeZoneInfo.FindSystemTimeZoneById("America/Chicago"));
 
         Assert.True(result);
         Assert.Equal(1, harness.CommittedTransactionCount);
@@ -139,7 +140,9 @@ public sealed class EditingTests
         var editing = CreateEditing(harness);
 
         var result = await editing.TryReplaceOnDraftInvoiceAsync(
-            Session(organizationId, Now.AddHours(-2), Now.AddHours(-1), sessionId, invoice.Id), invoice);
+            Session(organizationId, Now.AddHours(-2), Now.AddHours(-1), sessionId, invoice.Id),
+            invoice,
+            TimeZoneInfo.FindSystemTimeZoneById("America/Chicago"));
 
         Assert.False(result);
         Assert.Equal(1, harness.AbortedTransactionCount);
@@ -159,7 +162,8 @@ public sealed class EditingTests
         var editing = CreateEditing(harness);
 
         var result = await editing.TryReplaceOnDraftInvoiceAsync(
-            Session(organizationId, Now.AddHours(-2), Now.AddHours(-1), sessionId, invoice.Id), invoice);
+            Session(organizationId, Now.AddHours(-2), Now.AddHours(-1), sessionId, invoice.Id), invoice,
+            TimeZoneInfo.FindSystemTimeZoneById("America/Chicago"));
 
         Assert.False(result);
         Assert.Equal(1, harness.AbortedTransactionCount);
@@ -178,7 +182,8 @@ public sealed class EditingTests
         harness.TimeSessions.Seed(discarded, retained);
         var editing = CreateEditing(harness);
 
-        var result = await editing.TryDiscardFromDraftInvoiceAsync(discarded, invoice);
+        var result = await editing.TryDiscardFromDraftInvoiceAsync(discarded, invoice,
+            TimeZoneInfo.FindSystemTimeZoneById("America/Chicago"));
 
         Assert.True(result);
         Assert.Equal(1, harness.CommittedTransactionCount);
@@ -200,7 +205,8 @@ public sealed class EditingTests
         harness.TimeSessions.Seed(session);
         var editing = CreateEditing(harness);
 
-        var result = await editing.TryDiscardFromDraftInvoiceAsync(session, invoice);
+        var result = await editing.TryDiscardFromDraftInvoiceAsync(session, invoice,
+            TimeZoneInfo.FindSystemTimeZoneById("America/Chicago"));
 
         Assert.True(result);
         Assert.Equal(1, harness.CommittedTransactionCount);
@@ -220,7 +226,8 @@ public sealed class EditingTests
         harness.TimeSessions.Seed(session);
         var editing = CreateEditing(harness);
 
-        var result = await editing.TryDiscardFromDraftInvoiceAsync(session, invoice);
+        var result = await editing.TryDiscardFromDraftInvoiceAsync(session, invoice,
+            TimeZoneInfo.FindSystemTimeZoneById("America/Chicago"));
 
         Assert.False(result);
         Assert.Equal(1, harness.AbortedTransactionCount);
@@ -240,7 +247,8 @@ public sealed class EditingTests
         harness.TimeSessions.WriteFailure = MongoErrors.Uncategorized();
         var editing = CreateEditing(harness);
 
-        var result = await editing.TryDiscardFromDraftInvoiceAsync(session, invoice);
+        var result = await editing.TryDiscardFromDraftInvoiceAsync(session, invoice,
+            TimeZoneInfo.FindSystemTimeZoneById("America/Chicago"));
 
         Assert.False(result);
         Assert.Equal(1, harness.AbortedTransactionCount);

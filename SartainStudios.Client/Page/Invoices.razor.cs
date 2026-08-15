@@ -25,8 +25,8 @@ public sealed partial class Invoices(
     ISnackbar snackbar)
 {
     private static readonly TimeSpan AutoSelectGapThreshold = TimeSpan.FromHours(24);
-    private bool _createRequestHandled;
     private TaskCompletionSource<bool>? _confirmCompletion;
+    private bool _createRequestHandled;
     private bool _initialParametersHandled;
     private string? _lastId;
 

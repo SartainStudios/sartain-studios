@@ -9,7 +9,7 @@ namespace SartainStudios.Api.Service.Account;
 
 public sealed class Deletion(Database database, IMongoClient mongoClient, Draft draftInvoice)
 {
-    public async Task<DeletionOutcome> DeleteUserAsync(ObjectId userId)
+    public async Task<DeletionOutcome> DeleteUserAsync(ObjectId userId, TimeZoneInfo userTimeZone)
     {
         var userExists = await database.UserProfiles.Find(x => x.Id == userId).AnyAsync();
         if (!userExists) return DeletionOutcome.UserNotFound;
@@ -35,7 +35,7 @@ public sealed class Deletion(Database database, IMongoClient mongoClient, Draft 
                 .Distinct()
                 .ToList();
             foreach (var organizationId in sharedOrganizationIds)
-                await DeleteUserWorkSessionsAsync(mongoSession, organizationId, userId);
+                await DeleteUserWorkSessionsAsync(mongoSession, organizationId, userId, userTimeZone);
             if (membershipIdsToRemove.Count > 0)
                 await database.Memberships.DeleteManyAsync(mongoSession, m => membershipIdsToRemove.Contains(m.Id));
             await database.AuthenticationSessions.DeleteManyAsync(mongoSession, s => s.UserId == userId);
@@ -80,8 +80,11 @@ public sealed class Deletion(Database database, IMongoClient mongoClient, Draft 
         return !hasOtherActiveOwner;
     }
 
-    private async Task DeleteUserWorkSessionsAsync(IClientSessionHandle mongoSession, ObjectId organizationId,
-        ObjectId userId)
+    private async Task DeleteUserWorkSessionsAsync(
+        IClientSessionHandle mongoSession,
+        ObjectId organizationId,
+        ObjectId userId,
+        TimeZoneInfo userTimeZone)
     {
         var sessions = await database.TimeSessions
             .Find(mongoSession, s => s.OrganizationId == organizationId && s.UserId == userId)
@@ -98,7 +101,7 @@ public sealed class Deletion(Database database, IMongoClient mongoClient, Draft 
         {
             var invoice = await draftInvoice.LoadAsync(organizationId, invoiceId, mongoSession);
             if (invoice is null) continue;
-            await draftInvoice.RecalculateOrDeleteAsync(mongoSession, invoice);
+            await draftInvoice.RecalculateOrDeleteAsync(mongoSession, invoice, userTimeZone);
         }
     }
 }

@@ -55,9 +55,11 @@ public sealed class BillingContractController(BillingContractService billingCont
     public Task<ActionResult<Summary>> Update(
         string id,
         [FromBody] UpdateRequest request,
+        [FromQuery] string userTimeZoneId,
         CancellationToken cancellationToken)
     {
-        return billingContractService.UpdateAsync(id, request, cancellationToken).ToActionResultAsync(this);
+        return billingContractService.UpdateAsync(id, request, userTimeZoneId, cancellationToken)
+            .ToActionResultAsync(this);
     }
 
     [HttpDelete("{id}")]

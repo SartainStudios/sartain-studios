@@ -34,9 +34,12 @@ public sealed class InvoiceController(InvoiceService invoiceService) : Controlle
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public Task<ActionResult<Detail>> Get(string id, CancellationToken cancellationToken)
+    public Task<ActionResult<Detail>> Get(
+        string id,
+        [FromQuery] string userTimeZoneId,
+        CancellationToken cancellationToken)
     {
-        return invoiceService.GetAsync(id, cancellationToken).ToActionResultAsync(this);
+        return invoiceService.GetAsync(id, userTimeZoneId, cancellationToken).ToActionResultAsync(this);
     }
 
     [HttpGet("selectable-sessions")]
@@ -69,9 +72,10 @@ public sealed class InvoiceController(InvoiceService invoiceService) : Controlle
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public Task<ActionResult<Detail>> Generate(
         [FromBody] CreateRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] string userTimeZoneId)
     {
-        return invoiceService.GenerateAsync(request, cancellationToken)
+        return invoiceService.GenerateAsync(request, userTimeZoneId, cancellationToken)
             .ToActionResultAsync(this, detail => CreatedAtAction(nameof(Get), new { id = detail.Id }, detail));
     }
 
@@ -84,9 +88,10 @@ public sealed class InvoiceController(InvoiceService invoiceService) : Controlle
     public Task<ActionResult<Detail>> Edit(
         string id,
         [FromBody] EditRequest request,
+        [FromQuery] string userTimeZoneId,
         CancellationToken cancellationToken)
     {
-        return invoiceService.EditAsync(id, request, cancellationToken).ToActionResultAsync(this);
+        return invoiceService.EditAsync(id, request, userTimeZoneId, cancellationToken).ToActionResultAsync(this);
     }
 
     [HttpDelete("{id}")]
@@ -102,9 +107,12 @@ public sealed class InvoiceController(InvoiceService invoiceService) : Controlle
     [HttpGet("{id}/pdf")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FileContentResult))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public Task<ActionResult<InvoiceDocument>> DownloadPdf(string id, CancellationToken cancellationToken)
+    public Task<ActionResult<InvoiceDocument>> DownloadPdf(
+        string id,
+        [FromQuery] string userTimeZoneId,
+        CancellationToken cancellationToken)
     {
-        return invoiceService.RenderPdfAsync(id, cancellationToken)
+        return invoiceService.RenderPdfAsync(id, userTimeZoneId, cancellationToken)
             .ToActionResultAsync(this, document => File(document.Content, document.ContentType, document.FileName));
     }
 
@@ -113,9 +121,12 @@ public sealed class InvoiceController(InvoiceService invoiceService) : Controlle
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public Task<ActionResult<Detail>> SendInvoice(string id, CancellationToken cancellationToken)
+    public Task<ActionResult<Detail>> SendInvoice(
+        string id,
+        [FromQuery] string userTimeZoneId,
+        CancellationToken cancellationToken)
     {
-        return invoiceService.SendAsync(id, cancellationToken).ToActionResultAsync(this);
+        return invoiceService.SendAsync(id, userTimeZoneId, cancellationToken).ToActionResultAsync(this);
     }
 
     [HttpPatch("{id}/status")]
@@ -127,8 +138,10 @@ public sealed class InvoiceController(InvoiceService invoiceService) : Controlle
     public Task<ActionResult<Detail>> UpdateStatus(
         string id,
         [FromBody] UpdateRequest request,
+        [FromQuery] string userTimeZoneId,
         CancellationToken cancellationToken)
     {
-        return invoiceService.UpdateStatusAsync(id, request, cancellationToken).ToActionResultAsync(this);
+        return invoiceService.UpdateStatusAsync(id, request, userTimeZoneId, cancellationToken)
+            .ToActionResultAsync(this);
     }
 }

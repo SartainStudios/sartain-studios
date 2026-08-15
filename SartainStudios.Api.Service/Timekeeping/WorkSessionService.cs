@@ -157,8 +157,10 @@ public sealed class WorkSessionService(
     public async Task<Result<History>> UpdateAsync(
         string id,
         UpdateRequest request,
+        string userTimeZoneId,
         CancellationToken cancellationToken = default)
     {
+        var userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(userTimeZoneId);
         var loaded = await LoadAsync(id, cancellationToken);
         if (loaded.IsFailure)
             return loaded.Error;
@@ -184,15 +186,19 @@ public sealed class WorkSessionService(
         session.EndTime = endTime;
         session.UpdatedAt = now;
         var saved = invoice is not null
-            ? await editing.TryReplaceOnDraftInvoiceAsync(session, invoice)
+            ? await editing.TryReplaceOnDraftInvoiceAsync(session, invoice, userTimeZone)
             : await editing.TryReplaceUnbilledAsync(session);
         if (!saved)
             return WorkSessionErrors.UpdateConflict;
         return await timeline.ToHistoryAsync(context, session, invoice is null ? null : nameof(Status.Draft));
     }
 
-    public async Task<Result> DiscardAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<Result> DiscardAsync(
+        string id,
+        string userTimeZoneId,
+        CancellationToken cancellationToken = default)
     {
+        var userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(userTimeZoneId);
         var loaded = await LoadAsync(id, cancellationToken);
         if (loaded.IsFailure)
             return loaded.Error;
@@ -206,7 +212,7 @@ public sealed class WorkSessionService(
         var invoice = await draftInvoice.LoadAsync(context.OrganizationId, session.InvoiceId.Value);
         if (invoice is null)
             return WorkSessionErrors.NotDiscardableBilled;
-        return await editing.TryDiscardFromDraftInvoiceAsync(session, invoice)
+        return await editing.TryDiscardFromDraftInvoiceAsync(session, invoice, userTimeZone)
             ? Result.Success()
             : WorkSessionErrors.DiscardConflict;
     }

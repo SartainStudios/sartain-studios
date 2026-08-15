@@ -435,7 +435,7 @@ public sealed class AccountServiceTests
     {
         var fixture = CreateFixture(TestTenant.Anonymous());
 
-        var result = await fixture.Service.DeleteAsync();
+        var result = await fixture.Service.DeleteAsync("America/Chicago", CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal(TenantErrors.NotResolved, result.Error);
@@ -448,7 +448,7 @@ public sealed class AccountServiceTests
         var organizationId = ObjectId.GenerateNewId();
         var fixture = CreateFixture(TestTenant.Create(userId, organizationId));
 
-        var result = await fixture.Service.DeleteAsync();
+        var result = await fixture.Service.DeleteAsync("America/Chicago", CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal(AccountErrors.NotResolved, result.Error);
@@ -462,7 +462,7 @@ public sealed class AccountServiceTests
         var fixture = CreateFixture(TestTenant.Create(user.Id, organizationId));
         fixture.Harness.UserProfiles.Seed(user);
 
-        var result = await fixture.Service.DeleteAsync();
+        var result = await fixture.Service.DeleteAsync("America/Chicago", CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Empty(fixture.Harness.UserProfiles.Documents);

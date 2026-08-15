@@ -15,7 +15,7 @@ public static class Metadata
         public const string ForgotPasswordRoute = "/forgot-password";
         public const string ResetPasswordRoute = "/reset-password";
         public static readonly PageInfo IndexInfo = new(Route, "Account", Icons.Material.Filled.ManageAccounts);
-        
+
         public static readonly PageInfo SignIn = new(SignInRoute, "Sign In", Icons.Material.Filled.Login);
     }
 
