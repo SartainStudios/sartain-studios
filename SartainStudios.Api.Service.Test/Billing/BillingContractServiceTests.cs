@@ -168,9 +168,11 @@ public sealed class BillingContractServiceTests
         var service = CreateService(harness);
         var request = ValidCreateRequest(ObjectId.GenerateNewId().ToString());
 
-        var result = await service.UpdateAsync(ObjectId.GenerateNewId().ToString(),
+        var result = await service.UpdateAsync(
+            ObjectId.GenerateNewId().ToString(),
             new UpdateRequest(request.ProjectId, request.HourlyRate, request.ExpectedMinutes,
-                request.BillingCycle, request.ServiceProvided, request.InvoicePrefix, request.IsActive));
+                request.BillingCycle, request.ServiceProvided, request.InvoicePrefix, request.IsActive),
+            "America/Chicago");
 
         Assert.True(result.IsFailure);
     }
@@ -198,7 +200,7 @@ public sealed class BillingContractServiceTests
         var request = new UpdateRequest(project.Id.ToString(), 150m, 90, nameof(Cycle.Weekly), "Support", "SUP",
             true);
 
-        var result = await service.UpdateAsync(contract.Id.ToString(), request);
+        var result = await service.UpdateAsync(contract.Id.ToString(), request, "America/Chicago");
 
         Assert.True(result.IsSuccess);
         Assert.Equal(150m, result.Value.HourlyRate);

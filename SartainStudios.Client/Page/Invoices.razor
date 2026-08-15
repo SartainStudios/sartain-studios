@@ -529,7 +529,10 @@
             Style="position:fixed; bottom:24px; right:24px; z-index:1000;"/>
 }
 <ConfirmDialog Visible="@ShowConfirm"
-               VisibleChanged="@(visible => { if (!visible) CompleteConfirm(false); })"
+               VisibleChanged="@(visible =>
+                               {
+                                   if (!visible) CompleteConfirm(false);
+                               })"
                Title="@ConfirmTitle"
                Message="@ConfirmMessage"
                Details="@ConfirmDetails"

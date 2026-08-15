@@ -75,13 +75,13 @@ public sealed class WorkSession(HttpClient httpClient)
 
     public async Task DiscardAsync(string id)
     {
-        var response = await httpClient.DeleteAsync($"api/work-sessions/{id}");
+        var response = await httpClient.DeleteAsync(UserTimeZone.Append($"api/work-sessions/{id}"));
         await EnsureSuccessAsync(response);
     }
 
     public async Task<History> UpdateAsync(string id, UpdateRequest request)
     {
-        var response = await httpClient.PutAsJsonAsync($"api/work-sessions/{id}", request);
+        var response = await httpClient.PutAsJsonAsync(UserTimeZone.Append($"api/work-sessions/{id}"), request);
         await EnsureSuccessAsync(response);
         return await response.Content.ReadFromJsonAsync<History>()
                ?? throw new InvalidOperationException("Empty time session response.");

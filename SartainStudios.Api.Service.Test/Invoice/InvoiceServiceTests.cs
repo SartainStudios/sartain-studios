@@ -84,7 +84,7 @@ public sealed class InvoiceServiceTests
         var harness = new MongoHarness();
         var service = CreateService(harness);
 
-        var result = await service.GetAsync("not-an-id");
+        var result = await service.GetAsync("not-an-id", "America/Chicago");
 
         Assert.True(result.IsFailure);
         Assert.Equal(InvoiceErrors.InvalidId, result.Error);
@@ -96,7 +96,7 @@ public sealed class InvoiceServiceTests
         var harness = new MongoHarness();
         var service = CreateService(harness);
 
-        var result = await service.GetAsync(ObjectId.GenerateNewId().ToString());
+        var result = await service.GetAsync(ObjectId.GenerateNewId().ToString(), "America/Chicago");
 
         Assert.True(result.IsFailure);
     }
@@ -135,7 +135,7 @@ public sealed class InvoiceServiceTests
         var service = CreateService(harness);
         var request = new EditRequest([ObjectId.GenerateNewId().ToString()], DateTime.UtcNow);
 
-        var result = await service.EditAsync("not-an-id", request);
+        var result = await service.EditAsync("not-an-id", request, "America/Chicago");
 
         Assert.True(result.IsFailure);
         Assert.Equal(InvoiceErrors.InvalidId, result.Error);
@@ -148,7 +148,7 @@ public sealed class InvoiceServiceTests
         var service = CreateService(harness);
         var request = new CreateRequest("", [ObjectId.GenerateNewId().ToString()], DateTime.UtcNow);
 
-        var result = await service.GenerateAsync(request);
+        var result = await service.GenerateAsync(request, "America/Chicago");
 
         Assert.True(result.IsFailure);
     }

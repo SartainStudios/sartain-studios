@@ -70,8 +70,8 @@ public sealed class AccountController(AccountService accountService) : Controlle
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public Task<ActionResult> Delete(CancellationToken cancellationToken)
+    public Task<ActionResult> Delete([FromQuery] string userTimeZone, CancellationToken cancellationToken)
     {
-        return accountService.DeleteAsync(cancellationToken).ToActionResultAsync(this, NoContent);
+        return accountService.DeleteAsync(userTimeZone, cancellationToken).ToActionResultAsync(this, NoContent);
     }
 }

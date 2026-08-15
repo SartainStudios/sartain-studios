@@ -22,9 +22,9 @@ public sealed partial class Projects(
     ISnackbar snackbar) : IDisposable
 {
     private static readonly string[] Statuses = ["Active", "Archived"];
+    private Task? _clientsLoad;
     private bool _createRequestHandled;
     private string? _lastId;
-    private Task? _clientsLoad;
 
     [Parameter]
     [SupplyParameterFromQuery(Name = "id")]
@@ -54,6 +54,11 @@ public sealed partial class Projects(
     private bool CanManage { get; set; }
     private bool IsDetailView => !string.IsNullOrEmpty(Id);
 
+    public void Dispose()
+    {
+        cache.Changed -= OnCacheChanged;
+    }
+
     protected override Task OnInitializedAsync()
     {
         _lastId = Id;
@@ -64,11 +69,6 @@ public sealed partial class Projects(
         var authTask = LoadAuthorizationAsync();
 
         return Task.WhenAll(projectTask, clientsTask, authTask);
-    }
-
-    public void Dispose()
-    {
-        cache.Changed -= OnCacheChanged;
     }
 
     private void OnCacheChanged(string key)

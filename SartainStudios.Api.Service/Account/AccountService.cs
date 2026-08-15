@@ -112,12 +112,14 @@ public sealed class AccountService(
         return await BuildResponseAsync(context.Value, cancellationToken);
     }
 
-    public async Task<Result> DeleteAsync(CancellationToken cancellationToken = default)
+    public async Task<Result> DeleteAsync(string userTimeZoneId, CancellationToken cancellationToken = default)
     {
+        var userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(userTimeZoneId);
+
         var userId = currentTenant.UserId;
         if (userId == ObjectId.Empty)
             return TenantErrors.NotResolved;
-        var outcome = await deletion.DeleteUserAsync(userId);
+        var outcome = await deletion.DeleteUserAsync(userId, userTimeZone);
         return outcome switch
         {
             DeletionOutcome.Deleted => Result.Success(),

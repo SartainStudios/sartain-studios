@@ -115,8 +115,11 @@ public sealed class BillingContractService(
     public async Task<Result<Summary>> UpdateAsync(
         string id,
         UpdateRequest request,
+        string userTimeZone,
         CancellationToken cancellationToken = default)
     {
+        var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(userTimeZone);
+
         if (!currentTenant.TryGetIdentity(out _, out var organizationId))
             return TenantErrors.NotResolved;
         if (!ObjectId.TryParse(id, out var contractId))
@@ -160,7 +163,8 @@ public sealed class BillingContractService(
             return BillingContractErrors.ActiveContractExists;
         }
 
-        await draftInvoice.RefreshForContractAsync(organizationId, contract, project);
+        await draftInvoice.RefreshForContractAsync(organizationId, contract, project, timeZoneInfo);
+
         return ToSummary(contract, project);
     }
 

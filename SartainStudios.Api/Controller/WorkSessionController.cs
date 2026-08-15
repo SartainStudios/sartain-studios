@@ -89,17 +89,19 @@ public sealed class WorkSessionController(WorkSessionService workSessionService)
     public Task<ActionResult<History>> Update(
         string id,
         [FromBody] UpdateRequest request,
+        [FromQuery] string userTimeZoneId,
         CancellationToken cancellationToken)
     {
-        return workSessionService.UpdateAsync(id, request, cancellationToken).ToActionResultAsync(this);
+        return workSessionService.UpdateAsync(id, request, userTimeZoneId, cancellationToken).ToActionResultAsync(this);
     }
 
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public Task<ActionResult> Discard(string id, CancellationToken cancellationToken)
+    public Task<ActionResult> Discard(string id, [FromQuery] string userTimeZoneId, CancellationToken cancellationToken)
     {
-        return workSessionService.DiscardAsync(id, cancellationToken).ToActionResultAsync(this, NoContent);
+        return workSessionService.DiscardAsync(id, userTimeZoneId, cancellationToken)
+            .ToActionResultAsync(this, NoContent);
     }
 }

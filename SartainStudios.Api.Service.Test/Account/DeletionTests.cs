@@ -17,7 +17,9 @@ public sealed class DeletionTests
         var harness = new MongoHarness();
         var service = new Deletion(harness.Database, harness.Client, new Draft(harness.Database));
 
-        var outcome = await service.DeleteUserAsync(ObjectId.GenerateNewId());
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Chicago");
+
+        var outcome = await service.DeleteUserAsync(ObjectId.GenerateNewId(), timeZone);
 
         Assert.Equal(DeletionOutcome.UserNotFound, outcome);
     }
@@ -41,7 +43,8 @@ public sealed class DeletionTests
         harness.Organizations.Seed(organization);
         harness.Memberships.Seed(membership);
 
-        var outcome = await service.DeleteUserAsync(user.Id);
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Chicago");
+        var outcome = await service.DeleteUserAsync(user.Id, timeZone);
 
         Assert.Equal(DeletionOutcome.Deleted, outcome);
         Assert.Empty(harness.Organizations.Documents);
@@ -78,7 +81,8 @@ public sealed class DeletionTests
         harness.Organizations.Seed(organization);
         harness.Memberships.Seed(membership, otherMembership);
 
-        var outcome = await service.DeleteUserAsync(user.Id);
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Chicago");
+        var outcome = await service.DeleteUserAsync(user.Id, timeZone);
 
         Assert.Equal(DeletionOutcome.Deleted, outcome);
         Assert.Single(harness.Organizations.Documents);
@@ -100,7 +104,8 @@ public sealed class DeletionTests
         harness.EmailPasswordCredentials.Seed(new EmailPasswordCredential { UserId = user.Id });
         harness.PasswordResetTokens.Seed(new PasswordResetToken { UserId = user.Id });
 
-        var outcome = await service.DeleteUserAsync(user.Id);
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Chicago");
+        var outcome = await service.DeleteUserAsync(user.Id, timeZone);
 
         Assert.Equal(DeletionOutcome.Deleted, outcome);
         Assert.Empty(harness.AuthenticationSessions.Documents);
@@ -119,7 +124,8 @@ public sealed class DeletionTests
         harness.UserProfiles.Seed(user);
         harness.AuthenticationSessions.WriteFailure = new InvalidOperationException("simulated failure");
 
-        var outcome = await service.DeleteUserAsync(user.Id);
+        var timeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Chicago");
+        var outcome = await service.DeleteUserAsync(user.Id, timeZone);
 
         Assert.Equal(DeletionOutcome.Conflict, outcome);
         Assert.Equal(0, harness.CommittedTransactionCount);

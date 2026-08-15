@@ -11,9 +11,10 @@ namespace SartainStudios.Api.Service.Invoice;
 
 public static class Presentation
 {
-    public static Detail ToDetail(InvoiceEntity invoice, IReadOnlyList<WorkSession> sessions)
+    public static Detail ToDetail(InvoiceEntity invoice, IReadOnlyList<WorkSession> sessions, TimeZoneInfo userTimeZone)
     {
-        var dailyBreakdown = Totals.CalculateDailyBreakdown(sessions, invoice.ProjectSnapshot.HourlyRate);
+        var dailyBreakdown = Totals.CalculateDailyBreakdown(sessions, invoice.ProjectSnapshot.HourlyRate, userTimeZone);
+
         return new Detail(
             invoice.Id.ToString(),
             invoice.OrganizationId.ToString(),

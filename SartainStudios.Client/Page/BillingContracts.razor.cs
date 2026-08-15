@@ -2,8 +2,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
-using SartainStudios.Client.Service.Validation;
 using SartainStudios.Client.Service.Caching;
+using SartainStudios.Client.Service.Validation;
 using SartainStudios.Schema.Billing;
 using SartainStudios.Schema.Membership;
 using CreateInput = SartainStudios.Client.Component.BillingContractCreateDialog.CreateInput;
@@ -66,6 +66,11 @@ public sealed partial class BillingContracts(
 
     private bool IsDetailView => !string.IsNullOrEmpty(Id);
 
+    public void Dispose()
+    {
+        cache.Changed -= OnCacheChanged;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         _lastId = Id;
@@ -81,11 +86,6 @@ public sealed partial class BillingContracts(
             _ = EnsureProjectsAsync();
 
         await contractTask;
-    }
-
-    public void Dispose()
-    {
-        cache.Changed -= OnCacheChanged;
     }
 
     private void OnCacheChanged(string key)

@@ -51,12 +51,16 @@ public sealed class InvoiceService(
         return Result.Success(summaries);
     }
 
-    public async Task<Result<Detail>> GetAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<Result<Detail>> GetAsync(
+        string id,
+        string userTimeZoneId,
+        CancellationToken cancellationToken = default)
     {
+        var userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(userTimeZoneId);
         var loaded = await LoadAsync(id, cancellationToken);
         if (loaded.IsFailure)
             return loaded.Error;
-        return await BuildDetailAsync(loaded.Value);
+        return await BuildDetailAsync(loaded.Value, userTimeZone);
     }
 
     public async Task<Result<IReadOnlyList<SelectableSession>>> GetSelectableSessionsAsync(
@@ -90,8 +94,10 @@ public sealed class InvoiceService(
 
     public async Task<Result<Detail>> GenerateAsync(
         CreateRequest request,
+        string userTimeZoneId,
         CancellationToken cancellationToken = default)
     {
+        var userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(userTimeZoneId);
         var context = await access.LoadContextAsync();
         if (context is null)
             return TenantErrors.NotResolved;
@@ -134,7 +140,7 @@ public sealed class InvoiceService(
             var allocated = await sequence.AllocateAsync(mongoSession, organizationId, contract.InvoicePrefix);
             if (allocated is null)
                 return await AbortAsync(mongoSession, InvoiceErrors.NumberUnavailable, cancellationToken);
-            var totals = Totals.Calculate(sessions, contract.HourlyRate);
+            var totals = Totals.Calculate(sessions, contract.HourlyRate, userTimeZone);
             var now = timeProvider.GetUtcNow().UtcDateTime;
             var invoice = new InvoiceEntity
             {
@@ -159,7 +165,7 @@ public sealed class InvoiceService(
                 return await AbortAsync(mongoSession, InvoiceErrors.SessionsChanged, cancellationToken);
             await database.Invoices.InsertOneAsync(mongoSession, invoice, cancellationToken: cancellationToken);
             await mongoSession.CommitTransactionAsync(cancellationToken);
-            return Presentation.ToDetail(invoice, sessions);
+            return Presentation.ToDetail(invoice, sessions, userTimeZone);
         }
         catch (Exception exception) when (exception is MongoException or InvalidOperationException)
         {
@@ -170,8 +176,10 @@ public sealed class InvoiceService(
     public async Task<Result<Detail>> EditAsync(
         string id,
         EditRequest request,
+        string userTimeZoneId,
         CancellationToken cancellationToken = default)
     {
+        var userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(userTimeZoneId);
         var context = await access.LoadContextAsync();
         if (context is null)
             return TenantErrors.NotResolved;
@@ -213,7 +221,7 @@ public sealed class InvoiceService(
                     mongoSession, organizationId, invoiceId,
                     newSessionIds.Except(invoice.BilledSessionIds).ToArray(), now))
                 return await AbortAsync(mongoSession, InvoiceErrors.SessionsChanged, cancellationToken);
-            var totals = Totals.Calculate(sessions, contract.HourlyRate);
+            var totals = Totals.Calculate(sessions, contract.HourlyRate, userTimeZone);
             invoice.DueDate = request.DueDate;
             invoice.BilledSessionIds = newSessionIds;
             invoice.TotalAmount = totals.TotalAmount;
@@ -224,7 +232,7 @@ public sealed class InvoiceService(
             await database.Invoices.ReplaceOneAsync(
                 mongoSession, entity => entity.Id == invoiceId, invoice, cancellationToken: cancellationToken);
             await mongoSession.CommitTransactionAsync(cancellationToken);
-            return Presentation.ToDetail(invoice, sessions);
+            return Presentation.ToDetail(invoice, sessions, userTimeZone);
         }
         catch (Exception exception) when (exception is MongoException or InvalidOperationException)
         {
@@ -268,21 +276,27 @@ public sealed class InvoiceService(
 
     public async Task<Result<InvoiceDocument>> RenderPdfAsync(
         string id,
+        string userTimeZoneId,
         CancellationToken cancellationToken = default)
     {
+        var userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(userTimeZoneId);
         var loaded = await LoadAsync(id, cancellationToken);
         if (loaded.IsFailure)
             return loaded.Error;
         var sessions = await assignment.LoadBilledSessionsAsync(loaded.Value.OrganizationId, loaded.Value.InvoiceId);
-        var detail = Presentation.ToDetail(loaded.Value.Invoice, sessions);
+        var detail = Presentation.ToDetail(loaded.Value.Invoice, sessions, userTimeZone);
         return new InvoiceDocument(
             Document.FileName(loaded.Value.Invoice.InvoiceNumber),
             Document.ContentType,
             Document.Render(detail, sessions));
     }
 
-    public async Task<Result<Detail>> SendAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<Result<Detail>> SendAsync(
+        string id,
+        string userTimeZoneId,
+        CancellationToken cancellationToken = default)
     {
+        var userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(userTimeZoneId);
         var loaded = await LoadAsync(id, cancellationToken);
         if (loaded.IsFailure)
             return loaded.Error;
@@ -290,7 +304,7 @@ public sealed class InvoiceService(
         if (string.IsNullOrWhiteSpace(invoice.ClientSnapshot.Email))
             return InvoiceErrors.ClientEmailMissing;
         var sessions = await assignment.LoadBilledSessionsAsync(loaded.Value.OrganizationId, loaded.Value.InvoiceId);
-        var detail = Presentation.ToDetail(invoice, sessions);
+        var detail = Presentation.ToDetail(invoice, sessions, userTimeZone);
         try
         {
             email.SendEmail(InvoiceEmail.Build(invoice, detail, Document.Render(detail, sessions)));
@@ -306,14 +320,16 @@ public sealed class InvoiceService(
         invoice.UpdatedAt = timeProvider.GetUtcNow().UtcDateTime;
         await database.Invoices.ReplaceOneAsync(
             entity => entity.Id == invoice.Id, invoice, cancellationToken: cancellationToken);
-        return Presentation.ToDetail(invoice, sessions);
+        return Presentation.ToDetail(invoice, sessions, userTimeZone);
     }
 
     public async Task<Result<Detail>> UpdateStatusAsync(
         string id,
         UpdateRequest request,
+        string userTimeZoneId,
         CancellationToken cancellationToken = default)
     {
+        var userTimeZone = TimeZoneInfo.FindSystemTimeZoneById(userTimeZoneId);
         var loaded = await LoadAsync(id, cancellationToken);
         if (loaded.IsFailure)
             return loaded.Error;
@@ -327,7 +343,7 @@ public sealed class InvoiceService(
         invoice.UpdatedAt = timeProvider.GetUtcNow().UtcDateTime;
         await database.Invoices.ReplaceOneAsync(
             entity => entity.Id == invoice.Id, invoice, cancellationToken: cancellationToken);
-        return await BuildDetailAsync(loaded.Value);
+        return await BuildDetailAsync(loaded.Value, userTimeZone);
     }
 
     private async Task<Result<LoadedInvoice>> LoadAsync(string id, CancellationToken cancellationToken)
@@ -346,10 +362,10 @@ public sealed class InvoiceService(
             : new LoadedInvoice(organizationId, invoiceId, invoice);
     }
 
-    private async Task<Detail> BuildDetailAsync(LoadedInvoice loaded)
+    private async Task<Detail> BuildDetailAsync(LoadedInvoice loaded, TimeZoneInfo userTimeZone)
     {
         var sessions = await assignment.LoadBilledSessionsAsync(loaded.OrganizationId, loaded.InvoiceId);
-        return Presentation.ToDetail(loaded.Invoice, sessions);
+        return Presentation.ToDetail(loaded.Invoice, sessions, userTimeZone);
     }
 
     private async Task<Result<IReadOnlyList<SelectableSession>>> BuildSelectableSessionsAsync(

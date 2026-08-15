@@ -40,7 +40,7 @@ public sealed class PresentationTests
     {
         var invoice = CreateInvoice();
 
-        var detail = Presentation.ToDetail(invoice, []);
+        var detail = Presentation.ToDetail(invoice, [], TimeZoneInfo.FindSystemTimeZoneById("America/Chicago"));
 
         Assert.Equal(invoice.InvoiceNumber, detail.InvoiceNumber);
         Assert.Equal(invoice.Status, detail.Status);

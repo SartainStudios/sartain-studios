@@ -59,7 +59,7 @@ public sealed class Account(HttpClient httpClient, Authentication authentication
 
     public async Task DeleteAccountAsync(CancellationToken cancellationToken = default)
     {
-        var response = await httpClient.DeleteAsync(BaseRoute, cancellationToken);
+        var response = await httpClient.DeleteAsync(UserTimeZone.Append(BaseRoute), cancellationToken);
         await ApiResponse.EnsureSuccessAsync(response);
     }
 
