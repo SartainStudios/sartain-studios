@@ -288,7 +288,7 @@ public sealed class InvoiceService(
         return new InvoiceDocument(
             Document.FileName(loaded.Value.Invoice.InvoiceNumber),
             Document.ContentType,
-            Document.Render(detail, sessions));
+            Document.Render(detail, sessions, userTimeZone));
     }
 
     public async Task<Result<Detail>> SendAsync(
@@ -307,7 +307,7 @@ public sealed class InvoiceService(
         var detail = Presentation.ToDetail(invoice, sessions, userTimeZone);
         try
         {
-            email.SendEmail(InvoiceEmail.Build(invoice, detail, Document.Render(detail, sessions)));
+            email.SendEmail(InvoiceEmail.Build(invoice, detail, Document.Render(detail, sessions, userTimeZone)));
         }
         catch (Exception exception) when (exception is SmtpException or InvalidOperationException)
         {
