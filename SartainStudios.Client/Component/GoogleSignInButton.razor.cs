@@ -134,9 +134,6 @@ public sealed partial class GoogleSignInButton(
                 null,
                 null));
 
-            // Make sure the authentication state has settled before navigating, otherwise
-            // the router can briefly evaluate the route as unauthorized and bounce the
-            // user back to the sign-in page.
             await authenticationStateProvider.GetAuthenticationStateAsync();
 
             if (OnSignedIn.HasDelegate)

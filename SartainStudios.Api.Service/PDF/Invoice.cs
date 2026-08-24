@@ -6,7 +6,10 @@ using SartainStudios.Schema.Invoice;
 
 namespace SartainStudios.Api.Service.PDF;
 
-public sealed class Invoice(Detail detail, IReadOnlyList<WorkSession> sessions) : IDocument
+public sealed class Invoice(
+    Detail detail,
+    IReadOnlyList<WorkSession> sessions,
+    TimeZoneInfo userTimeZone) : IDocument
 {
     public DocumentMetadata GetMetadata()
     {
@@ -232,18 +235,27 @@ public sealed class Invoice(Detail detail, IReadOnlyList<WorkSession> sessions) 
         if (sessions.Count == 0) return [];
         var completedSessions = sessions.Where(s => s.EndTime.HasValue).ToList();
         if (completedSessions.Count == 0) return [];
+
         var dailyMinutes = new Dictionary<DateOnly, int>();
         foreach (var session in completedSessions)
         {
-            var startDate = DateOnly.FromDateTime(session.StartTime);
-            var endDate = DateOnly.FromDateTime(session.EndTime!.Value);
+            var localStartTime = TimeZoneInfo.ConvertTimeFromUtc(
+                Kind(session.StartTime), userTimeZone);
+            var localEndTime = TimeZoneInfo.ConvertTimeFromUtc(
+                Kind(session.EndTime!.Value), userTimeZone);
+
+            var startDate = DateOnly.FromDateTime(localStartTime);
+            var endDate = DateOnly.FromDateTime(localEndTime);
             var current = startDate;
+
             while (current <= endDate)
             {
-                var dayStart = current.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-                var dayEnd = current.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-                var clippedStart = session.StartTime < dayStart ? dayStart : session.StartTime;
-                var clippedEnd = session.EndTime!.Value > dayEnd ? dayEnd : session.EndTime!.Value;
+                var dayStart = current.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
+                var dayEnd = current.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
+
+                var clippedStart = localStartTime < dayStart ? dayStart : localStartTime;
+                var clippedEnd = localEndTime > dayEnd ? dayEnd : localEndTime;
+
                 if (clippedEnd > clippedStart)
                 {
                     var minutes = (int)Math.Floor((clippedEnd - clippedStart).TotalMinutes);
@@ -254,8 +266,14 @@ public sealed class Invoice(Detail detail, IReadOnlyList<WorkSession> sessions) 
             }
         }
 
-        var firstDate = DateOnly.FromDateTime(completedSessions.Min(s => s.StartTime));
-        var lastDate = DateOnly.FromDateTime(completedSessions.Max(s => s.EndTime!.Value));
+        var convertedSessions = completedSessions.Select(s => (
+            Start: TimeZoneInfo.ConvertTimeFromUtc(Kind(s.StartTime), userTimeZone),
+            End: TimeZoneInfo.ConvertTimeFromUtc(Kind(s.EndTime!.Value), userTimeZone)
+        )).ToList();
+
+        var firstDate = DateOnly.FromDateTime(convertedSessions.Min(s => s.Start));
+        var lastDate = DateOnly.FromDateTime(convertedSessions.Max(s => s.End));
+
         var rows = new List<(DateOnly, int)>();
         var day = firstDate;
         while (day <= lastDate)
@@ -265,5 +283,12 @@ public sealed class Invoice(Detail detail, IReadOnlyList<WorkSession> sessions) 
         }
 
         return rows;
+    }
+
+    private static DateTime Kind(DateTime dateTime)
+    {
+        return dateTime.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
+            : dateTime;
     }
 }

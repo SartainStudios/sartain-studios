@@ -24,7 +24,7 @@ public sealed class InvoiceTests
     public void GetMetadata_ReturnsInvoiceTitleAndAuthor()
     {
         var detail = CreateDetail("INV-1001", "Sartain Studios");
-        var document = new PdfInvoice(detail, []);
+        var document = new PdfInvoice(detail, [], TimeZoneInfo.Utc);
 
         var metadata = document.GetMetadata();
 
@@ -42,7 +42,7 @@ public sealed class InvoiceTests
                 new DateTime(2026, 8, 1, 9, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 8, 1, 11, 0, 0, DateTimeKind.Utc))
         };
-        var document = new PdfInvoice(detail, sessions);
+        var document = new PdfInvoice(detail, sessions, TimeZoneInfo.Utc);
 
         var bytes = document.GeneratePdf();
 
@@ -63,7 +63,7 @@ public sealed class InvoiceTests
                 new DateTime(2026, 8, 3, 14, 0, 0, DateTimeKind.Utc),
                 new DateTime(2026, 8, 3, 16, 0, 0, DateTimeKind.Utc))
         };
-        var document = new PdfInvoice(detail, sessions);
+        var document = new PdfInvoice(detail, sessions, TimeZoneInfo.Utc);
         var method = typeof(PdfInvoice).GetMethod("BuildDailyRows", BindingFlags.Instance | BindingFlags.NonPublic);
 
         var rows = Assert.IsAssignableFrom<IReadOnlyList<(DateOnly Date, int Minutes)>>(method!.Invoke(document, null));

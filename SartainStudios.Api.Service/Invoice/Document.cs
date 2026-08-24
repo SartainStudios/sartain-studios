@@ -8,9 +8,9 @@ public static class Document
 {
     public const string ContentType = "application/pdf";
 
-    public static byte[] Render(Detail detail, IReadOnlyList<WorkSession> sessions)
+    public static byte[] Render(Detail detail, IReadOnlyList<WorkSession> sessions, TimeZoneInfo userTimeZone)
     {
-        return new PDF.Invoice(detail, sessions).GeneratePdf();
+        return new PDF.Invoice(detail, sessions, userTimeZone).GeneratePdf();
     }
 
     public static string FileName(string invoiceNumber)
