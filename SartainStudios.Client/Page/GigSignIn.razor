@@ -1,0 +1,25 @@
+@using SartainStudios.Client.Layout
+@attribute [Route(Metadata.GigEarnings.SignInRoute)]
+@layout Empty
+<PageHeader Title="Gig Earnings sign in"/>
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="d-flex justify-center align-center"
+              Style="min-height: 100vh; padding-top: 40px; padding-bottom: 40px;">
+    <MudPaper Class="pa-8" Elevation="1" Style="width: 100%; border-radius: 12px;">
+        <MudStack Spacing="6" Class="mb-2">
+            <MudStack Spacing="2">
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="@Metadata.GigEarnings.SectionIcon" Color="Color.Primary" Size="Size.Large"/>
+                    <MudText Typo="Typo.h4" Class="font-weight-bold">Gig Earnings</MudText>
+                </MudStack>
+                <MudText Typo="Typo.body1">
+                    Track your sessions, log earnings from every gig app, and keep tabs on expenses and mileage.
+                </MudText>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                    (creates account if you do not have one.)
+                </MudText>
+            </MudStack>
+            <GoogleSignInButton GigMode="true" RedirectUrl="@ReturnUrl"/>
+            <MudLink Href="@Metadata.MainMenu.IndexRoute" Typo="Typo.body2">Back to main menu</MudLink>
+        </MudStack>
+    </MudPaper>
+</MudContainer>

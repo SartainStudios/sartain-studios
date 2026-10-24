@@ -2,7 +2,7 @@
 @using SartainStudios.Client.Layout
 @using SartainStudios.Schema.WorkSession
 @attribute [Route(Metadata.Invoicing.SessionsRoute)]
-@attribute [Authorize]
+@attribute [Authorize(Policy = Metadata.Policy.Organization)]
 @layout Main
 <PageHeader Title='@(IsEditView ? "Edit Session" : "Sessions")'/>
 <MudContainer MaxWidth="@(IsEditView ? MaxWidth.Large : MaxWidth.ExtraLarge)" Class="my-4 my-sm-6">

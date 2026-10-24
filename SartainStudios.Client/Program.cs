@@ -3,9 +3,11 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
 using SartainStudios.Client;
+using SartainStudios.Client.Page;
 using SartainStudios.Client.Service.Authentication;
 using SartainStudios.Client.Service.Caching;
 using SartainStudios.Client.ServiceCollection;
+using SartainStudios.Schema.Authentication;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -21,7 +23,15 @@ builder.Services.AddScoped<TokenRefresher>();
 builder.Services.AddScoped<BearerTokenHandler>();
 builder.Services.AddScoped<JwtAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<JwtAuthenticationStateProvider>());
-builder.Services.AddAuthorizationCore();
+builder.Services.AddAuthorizationCore(options =>
+{
+    options.AddPolicy(Metadata.Policy.Organization, policy =>
+        policy.RequireAuthenticatedUser()
+            .RequireAssertion(context => context.User.Claims.Any(claim =>
+                claim.Type == nameof(JwtClaimName.OrganizationId)
+                && !string.IsNullOrWhiteSpace(claim.Value)
+                && claim.Value != "000000000000000000000000")));
+});
 builder.Services.AddApiClients(builder.Configuration, builder.HostEnvironment.BaseAddress);
 builder.Services.AddServices();
 await builder.Build().RunAsync();

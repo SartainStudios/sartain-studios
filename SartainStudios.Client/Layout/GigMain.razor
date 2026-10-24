@@ -1,0 +1,8 @@
+@inherits LayoutComponentBase
+<MudLayout>
+    <GigAppBar OnDrawerToggle="DrawerToggle"/>
+    <GigDrawer @bind-Open="_drawerOpen"/>
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>

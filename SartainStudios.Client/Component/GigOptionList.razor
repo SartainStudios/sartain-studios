@@ -1,0 +1,71 @@
+@namespace SartainStudios.Client.Component
+<MudStack Spacing="3">
+    <MudPaper Class="pa-4" Elevation="1">
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <MudTextField T="string" @bind-Value="NewName" Label="@($"New {Noun}")" MaxLength="50" Disabled="IsBusy"
+                          Style="flex: 1 1 auto;" OnKeyUp="OnNewKeyUp"/>
+            <input type="color" value="@NewColor" @onchange="OnNewColorChanged" disabled="@IsBusy"
+                   aria-label="Color" style="width: 44px; height: 40px; border: none; background: none;"/>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="CreateAsync" Disabled="IsBusy || string.IsNullOrWhiteSpace(NewName)">
+                Add
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+
+    <MudPaper Elevation="1">
+        <MudList T="string" Dense="true">
+            @foreach (var item in Items)
+            {
+                <MudListItem T="string" @key="item.Id">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <span
+                            style="width: 14px; height: 14px; border-radius: 50%; background: @item.Color; flex: none;"></span>
+                        @if (EditingId == item.Id)
+                        {
+                            <MudTextField T="string" @bind-Value="EditName" MaxLength="50"
+                                          Disabled="IsBusy" Style="flex: 1 1 auto;"/>
+                            <input type="color" value="@EditColor" @onchange="OnEditColorChanged"
+                                   aria-label="Color"
+                                   style="width: 36px; height: 32px; border: none; background: none;"/>
+                            <MudIconButton Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small"
+                                           OnClick="SaveEditAsync" Disabled="IsBusy"/>
+                            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
+                                           OnClick="CancelEdit" Disabled="IsBusy"/>
+                        }
+                        else
+                        {
+                            <MudText Class="@(item.IsHidden ? "mud-text-disabled" : null)" Style="flex: 1 1 auto;">
+                                @item.Name
+                            </MudText>
+                            @if (item.IsDefault)
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined">Default</MudChip>
+                            }
+
+                            @if (item.IsHidden)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Warning">Hidden</MudChip>
+                            }
+
+                            <MudIconButton
+                                Icon="@(item.IsHidden ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                Size="Size.Small" Disabled="IsBusy"
+                                title="@(item.IsHidden ? "Show" : "Hide")"
+                                OnClick="() => ToggleHiddenAsync(item)"/>
+                            @if (!item.IsDefault)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                                               Size="Size.Small" Disabled="IsBusy" title="Edit"
+                                               OnClick="() => BeginEdit(item)"/>
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                               Size="Size.Small" Disabled="IsBusy" title="Delete"
+                                               OnClick="() => DeleteAsync(item)"/>
+                            }
+                        }
+                    </MudStack>
+                </MudListItem>
+            }
+        </MudList>
+    </MudPaper>
+</MudStack>

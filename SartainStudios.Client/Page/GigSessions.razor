@@ -1,0 +1,112 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@using SartainStudios.Schema.Gig
+@attribute [Route(Metadata.GigEarnings.SessionsRoute)]
+@attribute [Authorize]
+@layout GigMain
+<PageHeader Title="@Metadata.GigEarnings.Sessions.Name"/>
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4 my-sm-6">
+    <MudStack Spacing="4">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.h4">Sessions</MudText>
+                <MudText Color="Color.Secondary">Newest first. Edit or delete any session at any time.</MudText>
+            </MudStack>
+            <MudSpacer/>
+            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadAsync"
+                       Disabled="IsBusy || IsLoading">
+                Refresh
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenCreate" Disabled="IsBusy">
+                Log a session
+            </MudButton>
+        </MudStack>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+        }
+        @if (IsLoading)
+        {
+            <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="5" Columns="8"/>
+        }
+        else if (Items.Count == 0)
+        {
+            <MudPaper Class="pa-6" Elevation="1">
+                <MudStack Spacing="2" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="@Icons.Material.Filled.Timer" Color="Color.Secondary" Style="font-size:3rem;"/>
+                    <MudText Typo="Typo.h6">No sessions yet</MudText>
+                    <MudText Color="Color.Secondary">Start a session from Current Session and it will show up here.
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        }
+        else
+        {
+            <MudTable T="GigSessionDto" Items="Items" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>Started</MudTh>
+                    <MudTh>Ended</MudTh>
+                    <MudTh>Hours</MudTh>
+                    <MudTh>Earnings</MudTh>
+                    <MudTh>Expenses</MudTh>
+                    <MudTh>Profit</MudTh>
+                    <MudTh>Miles</MudTh>
+                    @if (MileageDeductionEnabled)
+                    {
+                        <MudTh>Est. deduction</MudTh>
+                    }
+                    <MudTh Style="text-align:right;">Actions</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Started">@context.StartTime.ToLocalTime().ToString("g")</MudTd>
+                    <MudTd DataLabel="Ended">
+                        @if (context.IsOpen)
+                        {
+                            <MudChip T="string" Color="Color.Error" Size="Size.Small">Running</MudChip>
+                        }
+                        else
+                        {
+                            @context.EndTime!.Value.ToLocalTime().ToString("g")
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Hours">@GigFormat.Hours(context.Minutes)</MudTd>
+                    <MudTd DataLabel="Earnings">@GigFormat.Money(context.GrossEarnings)</MudTd>
+                    <MudTd DataLabel="Expenses">@GigFormat.Money(context.TotalExpenses)</MudTd>
+                    <MudTd DataLabel="Profit">@GigFormat.Money(context.Profit)</MudTd>
+                    <MudTd DataLabel="Miles">@(context.Miles?.ToString("0.#") ?? "-")</MudTd>
+                    @if (MileageDeductionEnabled)
+                    {
+                        <MudTd DataLabel="Est. deduction">
+                            @(context.MileageDeduction is { } deduction ? GigFormat.Money(deduction) : "-")
+                        </MudTd>
+                    }
+                    <MudTd DataLabel="Actions" Style="text-align:right;">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small"
+                                       OnClick="() => OpenEdit(context)" Disabled="IsBusy" title="Edit session"/>
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                                       OnClick="() => ConfirmDelete(context)" Disabled="IsBusy" title="Delete session"/>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudStack>
+</MudContainer>
+
+<GigSessionDialog @bind-Visible="DialogVisible"
+                  Mode="DialogMode"
+                  Session="Editing"
+                  Sources="Sources"
+                  Categories="Categories"
+                  MileageDeductionEnabled="MileageDeductionEnabled"
+                  IsBusy="IsBusy"
+                  OnSave="SaveAsync"/>
+
+<ConfirmDialog @bind-Visible="DeleteVisible"
+               Title="Delete session?"
+               Message="This session and its earnings and expenses will be permanently removed."
+               ConfirmText="Delete"
+               ConfirmColor="Color.Error"
+               Icon="@Icons.Material.Filled.Delete"
+               IsBusy="IsBusy"
+               OnConfirm="DeleteAsync"/>

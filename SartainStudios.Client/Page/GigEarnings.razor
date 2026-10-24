@@ -1,0 +1,83 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@using SartainStudios.Schema.Gig
+@attribute [Route(Metadata.GigEarnings.CurrentSessionRoute)]
+@attribute [Authorize]
+@layout GigMain
+<PageHeader Title="@Metadata.GigEarnings.CurrentSession.Name"/>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="my-4 my-sm-6">
+    <MudStack Spacing="4">
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+        }
+        <MudPaper Class="pa-6" Elevation="1">
+            @if (IsLoading)
+            {
+                <LoadingSkeleton Variant="LoadingSkeletonVariant.Form" Rows="3"/>
+            }
+            else if (IsRunning)
+            {
+                <MudStack Spacing="3" AlignItems="AlignItems.Center">
+                    <MudChip T="string" Color="Color.Error" Size="Size.Small">Session running</MudChip>
+                    <MudText Typo="Typo.h2">@GigFormat.Clock(CurrentElapsed)</MudText>
+                    <MudText Color="Color.Secondary">
+                        Started @CurrentSession!.StartTime.ToLocalTime().ToString("f")
+                    </MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Large" FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.Stop" OnClick="OpenStopDialog" Disabled="IsBusy"
+                               Style="height: 72px; font-size: 1.25rem;">
+                        Stop
+                    </MudButton>
+                </MudStack>
+            }
+            else
+            {
+                <MudStack Spacing="3" AlignItems="AlignItems.Stretch">
+                    <MudText Typo="Typo.h2" Align="Align.Center">@GigFormat.Clock(TimeSpan.Zero)</MudText>
+                    <MudStack Row="true" Spacing="2">
+                        <MudSelect T="string" Label="Vehicle" Value="Vehicle" ValueChanged="OnVehicleChangedAsync"
+                                   Disabled="IsBusy" Style="flex: 1 1 0;">
+                            <MudSelectItem T="string" Value="@nameof(VehicleType.Car)">Car</MudSelectItem>
+                            <MudSelectItem T="string" Value="@nameof(VehicleType.Motorcycle)">Motorcycle</MudSelectItem>
+                            <MudSelectItem T="string" Value="@nameof(VehicleType.Bicycle)">Bicycle</MudSelectItem>
+                            <MudSelectItem T="string" Value="@nameof(VehicleType.EBike)">E-bike</MudSelectItem>
+                            <MudSelectItem T="string" Value="@nameof(VehicleType.Other)">Other</MudSelectItem>
+                        </MudSelect>
+                        <MudNumericField T="decimal?" Label="Start odometer (optional)" @bind-Value="StartOdometer"
+                                         Min="0m" HideSpinButtons="true" Disabled="IsBusy" Style="flex: 1 1 0;"/>
+                    </MudStack>
+                    <MudButton Variant="Variant.Filled" Color="Color.Success" Size="Size.Large" FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="StartAsync" Disabled="IsBusy"
+                               Style="height: 72px; font-size: 1.25rem;">
+                        Start
+                    </MudButton>
+                </MudStack>
+            }
+        </MudPaper>
+
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudPaper Class="pa-4" Elevation="1" Style="height: 100%;">
+                    <WeekSummaryCard Title="This week" Week="Report?.ThisWeek" IsLoading="IsLoadingReport"
+                                     ShowDeduction="Report?.MileageDeductionEnabled == true"/>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudPaper Class="pa-4" Elevation="1" Style="height: 100%;">
+                    <WeekSummaryCard Title="Last week" Week="Report?.LastWeek" IsLoading="IsLoadingReport"
+                                     ShowDeduction="Report?.MileageDeductionEnabled == true"/>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudStack>
+</MudContainer>
+
+<GigSessionDialog @bind-Visible="StopDialogVisible"
+                  Mode="GigSessionDialogMode.Stop"
+                  Session="CurrentSession"
+                  Sources="Sources"
+                  Categories="Categories"
+                  MileageDeductionEnabled="Report?.MileageDeductionEnabled == true"
+                  IsBusy="IsBusy"
+                  OnSave="StopAsync"/>

@@ -11,6 +11,8 @@ public sealed class TokenRefresher(
     ISnackbar snackbar)
 {
     public const string RefreshClientName = "AuthenticationRefresh";
+    private const string RefreshRoute = "api/authentication/refresh";
+    private const string GigRefreshRoute = "api/gig/authentication/refresh";
     private static readonly SemaphoreSlim RefreshLock = new(1, 1);
     private static readonly TimeSpan ExpiryLeeway = TimeSpan.FromSeconds(30);
     public event Action? SessionChanged;
@@ -45,9 +47,10 @@ public sealed class TokenRefresher(
                 !string.IsNullOrWhiteSpace(current.AccessToken))
                 return current;
             var refreshToken = current?.RefreshToken ?? session.RefreshToken;
+            var isGigSession = string.IsNullOrWhiteSpace((current ?? session).OrganizationId);
             var client = httpClientFactory.CreateClient(RefreshClientName);
             var response = await client.PostAsJsonAsync(
-                "api/authentication/refresh",
+                isGigSession ? GigRefreshRoute : RefreshRoute,
                 new RefreshRequest(refreshToken),
                 cancellationToken);
             if (!response.IsSuccessStatusCode)
@@ -56,27 +59,15 @@ public sealed class TokenRefresher(
                 return null;
             }
 
-            var body = await response.Content.ReadFromJsonAsync<Response>(cancellationToken);
-            if (body is null || string.IsNullOrWhiteSpace(body.AccessToken))
+            var updated = isGigSession
+                ? await ReadGigSessionAsync(response, cancellationToken)
+                : await ReadSessionAsync(response, cancellationToken);
+            if (updated is null)
             {
                 await ClearAsync();
                 return null;
             }
 
-            var updated = new StoredSession
-            {
-                AccessToken = body.AccessToken,
-                AccessTokenExpiresAt = body.AccessTokenExpiresAt,
-                RefreshToken = body.RefreshToken,
-                RefreshTokenExpiresAt = body.RefreshTokenExpiresAt,
-                UserId = body.User.Id,
-                DisplayName = body.User.DisplayName,
-                Email = body.User.Email,
-                ProfilePhotoUrl = body.User.ProfilePhotoUrl,
-                OrganizationId = body.Organization.Id,
-                OrganizationName = body.Organization.Name,
-                Role = body.Organization.Role
-            };
             await tokenStore.SaveAsync(updated);
             SessionChanged?.Invoke();
             return updated;
@@ -90,6 +81,50 @@ public sealed class TokenRefresher(
         {
             RefreshLock.Release();
         }
+    }
+
+    private static async Task<StoredSession?> ReadSessionAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        var body = await response.Content.ReadFromJsonAsync<Response>(cancellationToken);
+        if (body is null || string.IsNullOrWhiteSpace(body.AccessToken)) return null;
+        return new StoredSession
+        {
+            AccessToken = body.AccessToken,
+            AccessTokenExpiresAt = body.AccessTokenExpiresAt,
+            RefreshToken = body.RefreshToken,
+            RefreshTokenExpiresAt = body.RefreshTokenExpiresAt,
+            UserId = body.User.Id,
+            DisplayName = body.User.DisplayName,
+            Email = body.User.Email,
+            ProfilePhotoUrl = body.User.ProfilePhotoUrl,
+            OrganizationId = body.Organization.Id,
+            OrganizationName = body.Organization.Name,
+            Role = body.Organization.Role
+        };
+    }
+
+    private static async Task<StoredSession?> ReadGigSessionAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        var body = await response.Content.ReadFromJsonAsync<GigResponse>(cancellationToken);
+        if (body is null || string.IsNullOrWhiteSpace(body.AccessToken)) return null;
+        return new StoredSession
+        {
+            AccessToken = body.AccessToken,
+            AccessTokenExpiresAt = body.AccessTokenExpiresAt,
+            RefreshToken = body.RefreshToken,
+            RefreshTokenExpiresAt = body.RefreshTokenExpiresAt,
+            UserId = body.User.Id,
+            DisplayName = body.User.DisplayName,
+            Email = body.User.Email,
+            ProfilePhotoUrl = body.User.ProfilePhotoUrl,
+            OrganizationId = string.Empty,
+            OrganizationName = string.Empty,
+            Role = string.Empty
+        };
     }
 
     public async Task ClearAsync()

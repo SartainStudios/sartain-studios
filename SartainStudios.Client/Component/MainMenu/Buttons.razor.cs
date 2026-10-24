@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components;
 using MudBlazor;
 using Metadata = SartainStudios.Client.Page.Metadata;
 
@@ -31,7 +31,18 @@ public partial class Buttons : ComponentBase
                 "Send invoices to tracked hours"
             ],
             Metadata.Invoicing.DashboardRoute,
-            "Launch Invoicing App")
+            "Launch Invoicing App"),
+        new(
+            "Gig Earnings",
+            "Calculate your earnings from each gig",
+            Metadata.GigEarnings.SectionIcon,
+            [
+                "Start/Stop button for each session",
+                "Log earnings from every gig app you use",
+                "Track expenses and mileage"
+            ],
+            Metadata.GigEarnings.CurrentSessionRoute,
+            "Launch Gig Earnings")
     ];
 
     private sealed record MenuItem(

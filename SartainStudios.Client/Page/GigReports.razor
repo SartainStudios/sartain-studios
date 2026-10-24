@@ -1,0 +1,119 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@using SartainStudios.Schema.Gig
+@attribute [Route(Metadata.GigEarnings.ReportsRoute)]
+@attribute [Authorize]
+@layout GigMain
+<PageHeader Title="@Metadata.GigEarnings.Reports.Name"/>
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4 my-sm-6">
+    <MudStack Spacing="4">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.h4">Reports</MudText>
+                <MudText Color="Color.Secondary">Weeks start on Monday in your local time zone.</MudText>
+            </MudStack>
+            <MudSpacer/>
+            <MudSelect T="int" Label="Range" Value="Weeks" ValueChanged="OnWeeksChangedAsync" Style="max-width: 180px;"
+                       Disabled="IsLoading">
+                <MudSelectItem T="int" Value="4">Last 4 weeks</MudSelectItem>
+                <MudSelectItem T="int" Value="8">Last 8 weeks</MudSelectItem>
+                <MudSelectItem T="int" Value="12">Last 12 weeks</MudSelectItem>
+                <MudSelectItem T="int" Value="26">Last 26 weeks</MudSelectItem>
+            </MudSelect>
+        </MudStack>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+        }
+        @if (IsLoading || Report is null)
+        {
+            <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="6" Columns="6"/>
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-4" Elevation="1" Style="height: 100%;">
+                        <WeekSummaryCard Title="This week" Week="Report.ThisWeek"
+                                         ShowDeduction="Report.MileageDeductionEnabled"/>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="pa-4" Elevation="1" Style="height: 100%;">
+                        <WeekSummaryCard Title="Last week" Week="Report.LastWeek"
+                                         ShowDeduction="Report.MileageDeductionEnabled"/>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            <MudGrid>
+                <MudItem xs="12" lg="6">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.subtitle1">Daily earnings (last 14 days)</MudText>
+                        <MudChart ChartType="ChartType.Bar" ChartSeries="DailySeries" ChartLabels="DailyLabels"
+                                  Width="100%" Height="300px"/>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" lg="6">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.subtitle1">Weekly earnings and profit</MudText>
+                        <MudChart ChartType="ChartType.Bar" ChartSeries="WeeklySeries" ChartLabels="WeeklyLabels"
+                                  Width="100%" Height="300px"/>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" lg="6">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.subtitle1">Average earnings by weekday</MudText>
+                        <MudChart ChartType="ChartType.Line" ChartSeries="WeekdaySeries" ChartLabels="WeekdayLabels"
+                                  Width="100%" Height="300px"/>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" lg="6">
+                    <MudPaper Class="pa-4" Elevation="1">
+                        <MudText Typo="Typo.subtitle1">Hourly rate by week</MudText>
+                        <MudChart ChartType="ChartType.Line" ChartSeries="HourlyRateSeries" ChartLabels="WeeklyLabels"
+                                  Width="100%" Height="300px"/>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+
+            <MudText Typo="Typo.h6">Weekly breakdown</MudText>
+            <MudTable T="WeekSummary" Items="WeeksNewestFirst" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>Week of</MudTh>
+                    <MudTh>Sessions</MudTh>
+                    <MudTh>Hours</MudTh>
+                    <MudTh>Earnings</MudTh>
+                    <MudTh>Expenses</MudTh>
+                    <MudTh>Miles</MudTh>
+                    <MudTh>Profit</MudTh>
+                    <MudTh>Hourly rate</MudTh>
+                    @if (Report.MileageDeductionEnabled)
+                    {
+                        <MudTh>Est. deduction</MudTh>
+                        <MudTh>Profit after deduction</MudTh>
+                    }
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Week of">@context.WeekStart.ToString("MMM d, yyyy")</MudTd>
+                    <MudTd DataLabel="Sessions">@context.SessionCount</MudTd>
+                    <MudTd DataLabel="Hours">@GigFormat.Hours(context.Minutes)</MudTd>
+                    <MudTd DataLabel="Earnings">@GigFormat.Money(context.Gross)</MudTd>
+                    <MudTd DataLabel="Expenses">@GigFormat.Money(context.Expenses)</MudTd>
+                    <MudTd DataLabel="Miles">@context.Miles.ToString("0.#")</MudTd>
+                    <MudTd DataLabel="Profit">@GigFormat.Money(context.Profit)</MudTd>
+                    <MudTd DataLabel="Hourly rate">@GigFormat.Rate(context.GrossHourlyRate)</MudTd>
+                    @if (Report.MileageDeductionEnabled)
+                    {
+                        <MudTd DataLabel="Est. deduction">
+                            @(context.MileageDeduction is { } deduction ? GigFormat.Money(deduction) : "-")
+                        </MudTd>
+                        <MudTd DataLabel="Profit after deduction">
+                            @(context.ProfitAfterDeduction is { } after ? GigFormat.Money(after) : "-")
+                        </MudTd>
+                    }
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudStack>
+</MudContainer>

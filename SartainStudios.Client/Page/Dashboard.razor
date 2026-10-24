@@ -2,7 +2,7 @@
 @using SartainStudios.Client.Layout
 @using SartainStudios.Schema.WorkSession
 @attribute [Route(Metadata.Invoicing.DashboardRoute)]
-@attribute [Authorize]
+@attribute [Authorize(Policy = Metadata.Policy.Organization)]
 @layout Main
 <PageHeader Title="@Metadata.Invoicing.DashboardInfo.Name"/>
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-2">

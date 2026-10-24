@@ -2,14 +2,22 @@
 @using SartainStudios.Schema.Authentication
 @attribute [Route(Metadata.Account.SignInRoute)]
 @layout Empty
-<PageHeader Title="Sign in"/>
+<PageHeader Title="Invoicing Sign in"/>
 <MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="d-flex justify-center align-center"
               Style="min-height: 100vh; padding-top: 40px; padding-bottom: 40px;">
     <MudPaper Class="pa-8" Elevation="1" Style="width: 100%; border-radius: 12px;">
         <MudStack Spacing="6" Class="mb-2">
             <MudStack Spacing="2">
-                <MudText Typo="Typo.h4" Class="font-weight-bold">Sign in</MudText>
-                <MudText Typo="Typo.body2">(creates account if you do not have one.)</MudText>
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <MudIcon Icon="@Metadata.Invoicing.SectionIcon" Color="Color.Primary" Size="Size.Large"/>
+                    <MudText Typo="Typo.h4" Class="font-weight-bold">Invoicing App</MudText>
+                </MudStack>
+                <MudText Typo="Typo.body1">
+                    Track the hours you work, manage your clients, and send them invoices.
+                </MudText>
+                <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                    (creates account if you do not have one.)
+                </MudText>
             </MudStack>
             <GoogleSignInButton RedirectUrl="@ReturnUrl" OnBusyChanged="OnGoogleBusyChanged"/>
 
@@ -71,6 +79,7 @@
                     <span>Continue</span>
                 }
             </MudButton>
+            <MudLink Href="@Metadata.MainMenu.IndexRoute" Typo="Typo.body2">Back to main menu</MudLink>
         </MudStack>
     </MudPaper>
 </MudContainer>

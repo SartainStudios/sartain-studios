@@ -1,0 +1,47 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@attribute [Route(Metadata.GigEarnings.SourcesRoute)]
+@attribute [Authorize]
+@layout GigMain
+<PageHeader Title="@Metadata.GigEarnings.Sources.Name"/>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="my-4 my-sm-6">
+    <MudStack Spacing="4">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4">Sources and categories</MudText>
+            <MudText Color="Color.Secondary">
+                Choose where your income comes from and what you spend. Hide the ones you never use.
+            </MudText>
+        </MudStack>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+        }
+        @if (IsLoading)
+        {
+            <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="6" Columns="2"/>
+        }
+        else
+        {
+            <MudTabs Elevation="0" Rounded="true">
+                <MudTabPanel Text="Income sources">
+                    <GigOptionList Noun="source"
+                                   Items="SourceItems"
+                                   IsBusy="IsBusy"
+                                   OnCreate="CreateSourceAsync"
+                                   OnUpdate="UpdateSourceAsync"
+                                   OnToggleHidden="ToggleSourceAsync"
+                                   OnDelete="DeleteSourceAsync"/>
+                </MudTabPanel>
+                <MudTabPanel Text="Expense categories">
+                    <GigOptionList Noun="category"
+                                   Items="CategoryItems"
+                                   IsBusy="IsBusy"
+                                   OnCreate="CreateCategoryAsync"
+                                   OnUpdate="UpdateCategoryAsync"
+                                   OnToggleHidden="ToggleCategoryAsync"
+                                   OnDelete="DeleteCategoryAsync"/>
+                </MudTabPanel>
+            </MudTabs>
+        }
+    </MudStack>
+</MudContainer>

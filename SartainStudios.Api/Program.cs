@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using QuestPDF;
 using QuestPDF.Infrastructure;
 using SartainStudios.Api.Service.Data;
+using SartainStudios.Api.Service.Gig;
 using SartainStudios.Api.Service.Health;
 using SartainStudios.Api.ServiceCollection;
 
@@ -29,6 +30,7 @@ using (var scope = app.Services.CreateScope())
 {
     var indexInitializer = scope.ServiceProvider.GetRequiredService<IIndexInitializer>();
     await indexInitializer.InitializeIndexesAsync();
+    await scope.ServiceProvider.GetRequiredService<GigSeeder>().SeedAsync();
 }
 
 app.UseExceptionHandler();
