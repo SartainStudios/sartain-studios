@@ -1,4 +1,4 @@
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using SartainStudios.Api.Schema.Authentication;
 using SartainStudios.Api.Service.Authentication;
 using SartainStudios.Api.Service.Invoice;
@@ -13,7 +13,7 @@ namespace SartainStudios.Api.Service.Timekeeping;
 
 public sealed class WorkSessionService(
     Access access,
-    Tracker tracker,
+    WorkSessionStore sessionStore,
     Timeline timeline,
     Editing editing,
     Draft draftInvoice,
@@ -77,8 +77,8 @@ public sealed class WorkSessionService(
         var context = await access.LoadContextAsync();
         if (context is null)
             return TenantErrors.NotResolved;
-        var currentSession = await tracker.LoadCurrentAsync(context.Value.OrganizationId, context.Value.UserId);
-        return await tracker.BuildStateAsync(context.Value.OrganizationId, currentSession);
+        var currentSession = await sessionStore.LoadCurrentAsync(context.Value.OrganizationId, context.Value.UserId);
+        return await sessionStore.BuildStateAsync(context.Value.OrganizationId, currentSession);
     }
 
     public async Task<Result<History>> GetAsync(string id, CancellationToken cancellationToken = default)
@@ -102,10 +102,11 @@ public sealed class WorkSessionService(
         var startTime = Timing.NormalizeStartTime(request.StartTime, now);
         if (startTime.IsFailure)
             return startTime.Error;
-        var currentSession = await tracker.LoadCurrentAsync(context.Value.OrganizationId, context.Value.UserId);
+        var currentSession = await sessionStore.LoadCurrentAsync(context.Value.OrganizationId, context.Value.UserId);
         if (currentSession is not null)
             return WorkSessionErrors.TimerAlreadyRunning;
-        var (contract, project) = await tracker.LoadStartTargetsAsync(context.Value.OrganizationId, contractId.Value);
+        var (contract, project) =
+            await sessionStore.LoadStartTargetsAsync(context.Value.OrganizationId, contractId.Value);
         if (contract is null)
             return WorkSessionErrors.ContractNotFound;
         if (!contract.IsActive)
@@ -116,7 +117,8 @@ public sealed class WorkSessionService(
             return WorkSessionErrors.ProjectArchived;
         if (startTime.Value > now)
             return WorkSessionErrors.StartTimeInFuture;
-        if (await tracker.HasOverlapAsync(context.Value.OrganizationId, context.Value.UserId, startTime.Value, now))
+        if (await sessionStore.HasOverlapAsync(context.Value.OrganizationId, context.Value.UserId, startTime.Value,
+                now))
             return WorkSessionErrors.OverlapConflict;
         var session = new WorkSessionEntity
         {
@@ -129,9 +131,9 @@ public sealed class WorkSessionService(
             CreatedAt = now,
             UpdatedAt = now
         };
-        if (!await tracker.TryStartAsync(session))
+        if (!await sessionStore.TryStartAsync(session))
             return WorkSessionErrors.StartConflict;
-        return await tracker.BuildStateAsync(context.Value.OrganizationId, session);
+        return await sessionStore.BuildStateAsync(context.Value.OrganizationId, session);
     }
 
     public async Task<Result<State>> StopAsync(StopRequest request, CancellationToken cancellationToken = default)
@@ -139,19 +141,19 @@ public sealed class WorkSessionService(
         var context = await access.LoadContextAsync();
         if (context is null)
             return TenantErrors.NotResolved;
-        var currentSession = await tracker.LoadCurrentAsync(context.Value.OrganizationId, context.Value.UserId);
+        var currentSession = await sessionStore.LoadCurrentAsync(context.Value.OrganizationId, context.Value.UserId);
         if (currentSession is null)
             return WorkSessionErrors.NoRunningTimer;
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var endTime = Timing.NormalizeEndTime(request.EndTime, currentSession.StartTime, now);
         if (endTime.IsFailure)
             return endTime.Error;
-        if (await tracker.HasOverlapAsync(context.Value.OrganizationId, context.Value.UserId,
+        if (await sessionStore.HasOverlapAsync(context.Value.OrganizationId, context.Value.UserId,
                 currentSession.StartTime, endTime.Value, currentSession.Id))
             return WorkSessionErrors.OverlapConflict;
-        if (!await tracker.TryStopAsync(currentSession, endTime.Value))
+        if (!await sessionStore.TryStopAsync(currentSession, endTime.Value))
             return WorkSessionErrors.StopConflict;
-        return await tracker.BuildStateAsync(context.Value.OrganizationId, null);
+        return await sessionStore.BuildStateAsync(context.Value.OrganizationId, null);
     }
 
     public async Task<Result<History>> UpdateAsync(
@@ -179,7 +181,7 @@ public sealed class WorkSessionService(
             return range.Error;
         var (startTime, endTime) = range.Value;
         var overlapEndTime = endTime ?? now;
-        if (await tracker.HasOverlapAsync(context.OrganizationId, context.UserId, startTime, overlapEndTime,
+        if (await sessionStore.HasOverlapAsync(context.OrganizationId, context.UserId, startTime, overlapEndTime,
                 session.Id))
             return WorkSessionErrors.OverlapConflict;
         session.StartTime = startTime;

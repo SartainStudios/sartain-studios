@@ -1,0 +1,32 @@
+@using Metadata = SartainStudios.Client.Page.Metadata
+<MudDrawer Open="Open"
+           OpenChanged="OpenChanged"
+           ClipMode="DrawerClipMode.Always"
+           Elevation="2"
+           Variant="DrawerVariant.Responsive"
+           Breakpoint="Breakpoint.Sm">
+    <MudNavMenu>
+        <MudNavLink Href="@Metadata.GigEarnings.CurrentSessionRoute" Match="NavLinkMatch.All"
+                    Icon="@Metadata.GigEarnings.CurrentSession.Icon">
+            @Metadata.GigEarnings.CurrentSession.Name
+        </MudNavLink>
+        <MudNavLink Href="@Metadata.GigEarnings.SessionsRoute" Icon="@Metadata.GigEarnings.Sessions.Icon">
+            @Metadata.GigEarnings.Sessions.Name
+        </MudNavLink>
+        <MudNavLink Href="@Metadata.GigEarnings.SourcesRoute" Icon="@Metadata.GigEarnings.Sources.Icon">
+            @Metadata.GigEarnings.Sources.Name
+        </MudNavLink>
+        <MudNavLink Href="@Metadata.GigEarnings.ReportsRoute" Icon="@Metadata.GigEarnings.Reports.Icon">
+            @Metadata.GigEarnings.Reports.Name
+        </MudNavLink>
+        <MudNavLink Href="@Metadata.GigEarnings.SettingsRoute" Icon="@Metadata.GigEarnings.Settings.Icon">
+            @Metadata.GigEarnings.Settings.Name
+        </MudNavLink>
+    </MudNavMenu>
+    <MudDivider/>
+    <MudNavLink Href="@Metadata.MainMenu.StayRoute"
+                Match="NavLinkMatch.All"
+                Icon="@Metadata.MainMenu.IndexInfo.Icon">
+        Exit to Main Menu
+    </MudNavLink>
+</MudDrawer>

@@ -146,4 +146,30 @@ public static class Metadata
     {
         public const string RequestSoftwareRoute = "/request-software";
     }
+
+    public static class Policy
+    {
+        public const string Organization = "Organization";
+    }
+
+    public static class GigEarnings
+    {
+        public const string SectionIcon = Icons.Material.Filled.Payments;
+        private const string BaseRoute = "/gig-earnings";
+        public const string CurrentSessionRoute = BaseRoute;
+        public const string SessionsRoute = BaseRoute + "/sessions";
+        public const string SourcesRoute = BaseRoute + "/sources";
+        public const string ReportsRoute = BaseRoute + "/reports";
+        public const string SettingsRoute = BaseRoute + "/settings";
+        public const string SignInRoute = BaseRoute + "/sign-in";
+
+        public static readonly PageInfo CurrentSession =
+            new(CurrentSessionRoute, "Current Session", Icons.Material.Filled.Timer);
+
+        public static readonly PageInfo Sessions = new(SessionsRoute, "Sessions", Icons.Material.Filled.ListAlt);
+        public static readonly PageInfo Sources = new(SourcesRoute, "Sources", Icons.Material.Filled.Category);
+        public static readonly PageInfo Reports = new(ReportsRoute, "Reports", Icons.Material.Filled.BarChart);
+        public static readonly PageInfo Settings = new(SettingsRoute, "Settings", Icons.Material.Filled.Settings);
+        public static readonly PageInfo SignIn = new(SignInRoute, "Sign In", Icons.Material.Filled.Login);
+    }
 }

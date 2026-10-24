@@ -52,6 +52,10 @@ internal sealed class MongoHarness
         Register(mongoDatabase, TimeSessions);
         Register(mongoDatabase, Invoices);
         Register(mongoDatabase, InvoiceSequences);
+        Register(mongoDatabase, GigSessions);
+        Register(mongoDatabase, GigSources);
+        Register(mongoDatabase, GigExpenseCategories);
+        Register(mongoDatabase, GigSettings);
 
         Database = new Database(Client, new Mongo { ConnectionUri = "mongodb://localhost", DatabaseName = "tests" });
     }
@@ -93,6 +97,14 @@ internal sealed class MongoHarness
     public FakeCollection<InvoiceEntity> Invoices { get; } = new();
 
     public FakeCollection<InvoiceSequence> InvoiceSequences { get; } = new();
+
+    public FakeCollection<GigSession> GigSessions { get; } = new();
+
+    public FakeCollection<GigSource> GigSources { get; } = new();
+
+    public FakeCollection<GigExpenseCategory> GigExpenseCategories { get; } = new();
+
+    public FakeCollection<GigSettings> GigSettings { get; } = new();
 
     private static void Register<TDocument>(IMongoDatabase mongoDatabase, FakeCollection<TDocument> collection)
         where TDocument : class

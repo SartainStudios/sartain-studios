@@ -3,7 +3,7 @@
 @using SartainStudios.Client.Service.Validation
 @using SartainStudios.Schema.Invoice
 @attribute [Route(Metadata.Client.Route)]
-@attribute [Authorize]
+@attribute [Authorize(Policy = Metadata.Policy.Organization)]
 @layout Main
 <PageHeader Title='@(SelectedClient is null ? "Clients" : SelectedClient.CompanyName)'/>
 <MudContainer MaxWidth="@(IsDetailView ? MaxWidth.Large : MaxWidth.ExtraLarge)" Class="my-4 my-sm-6">

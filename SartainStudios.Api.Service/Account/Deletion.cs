@@ -42,6 +42,10 @@ public sealed class Deletion(Database database, IMongoClient mongoClient, Draft 
             await database.AuthenticationIdentities.DeleteManyAsync(mongoSession, i => i.UserId == userId);
             await database.EmailPasswordCredentials.DeleteManyAsync(mongoSession, c => c.UserId == userId);
             await database.PasswordResetTokens.DeleteManyAsync(mongoSession, t => t.UserId == userId);
+            await database.GigSessions.DeleteManyAsync(mongoSession, s => s.UserId == userId);
+            await database.GigSettings.DeleteManyAsync(mongoSession, s => s.UserId == userId);
+            await database.GigSources.DeleteManyAsync(mongoSession, s => s.UserId == userId);
+            await database.GigExpenseCategories.DeleteManyAsync(mongoSession, c => c.UserId == userId);
             await database.UserProfiles.DeleteOneAsync(mongoSession, x => x.Id == userId);
             await mongoSession.CommitTransactionAsync();
             return DeletionOutcome.Deleted;

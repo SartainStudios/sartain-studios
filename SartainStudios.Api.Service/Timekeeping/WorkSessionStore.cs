@@ -1,4 +1,4 @@
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using MongoDB.Driver;
 using SartainStudios.Api.Service.Data;
 using SartainStudios.Schema.DatabaseEntity;
@@ -7,7 +7,7 @@ using WorkSessionEntity = SartainStudios.Schema.DatabaseEntity.WorkSession;
 
 namespace SartainStudios.Api.Service.Timekeeping;
 
-public sealed class Tracker(Database database)
+public sealed class WorkSessionStore(Database database)
 {
     public async Task<WorkSessionEntity?> LoadCurrentAsync(ObjectId organizationId, ObjectId userId)
     {

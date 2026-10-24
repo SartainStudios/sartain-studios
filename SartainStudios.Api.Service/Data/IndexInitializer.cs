@@ -24,6 +24,10 @@ public sealed class IndexInitializer(Database database) : IIndexInitializer
             await InitializeInvoiceIndexesAsync();
             await InitializeInvoiceSequenceIndexesAsync();
             await InitializeHourLimitNotificationIndexesAsync();
+            await InitializeGigSessionIndexesAsync();
+            await InitializeGigSourceIndexesAsync();
+            await InitializeGigExpenseCategoryIndexesAsync();
+            await InitializeGigSettingsIndexesAsync();
         }
         catch (Exception ex)
         {
@@ -414,6 +418,74 @@ public sealed class IndexInitializer(Database database) : IIndexInitializer
                     Builders<HourLimitNotification>.IndexKeys.Ascending(x => x.WeekStart),
                     Builders<HourLimitNotification>.IndexKeys.Ascending(x => x.NotificationType)
                 ),
+                new CreateIndexOptions { Unique = true }
+            )
+        );
+    }
+
+    private async Task InitializeGigSessionIndexesAsync()
+    {
+        var collection = database.GigSessions;
+
+        await collection.Indexes.CreateOneAsync(
+            new CreateIndexModel<GigSession>(
+                Builders<GigSession>.IndexKeys.Combine(
+                    Builders<GigSession>.IndexKeys.Ascending(x => x.UserId),
+                    Builders<GigSession>.IndexKeys.Descending(x => x.StartTime)
+                )
+            )
+        );
+
+        await collection.Indexes.CreateOneAsync(
+            new CreateIndexModel<GigSession>(
+                Builders<GigSession>.IndexKeys.Ascending(x => x.UserId),
+                new CreateIndexOptions<GigSession>
+                {
+                    Name = "uniq_open_session_per_user",
+                    Unique = true,
+                    PartialFilterExpression = Builders<GigSession>.Filter.Eq(x => x.IsOpen, true)
+                }
+            )
+        );
+    }
+
+    private async Task InitializeGigSourceIndexesAsync()
+    {
+        var collection = database.GigSources;
+
+        await collection.Indexes.CreateOneAsync(
+            new CreateIndexModel<GigSource>(
+                Builders<GigSource>.IndexKeys.Combine(
+                    Builders<GigSource>.IndexKeys.Ascending(x => x.UserId),
+                    Builders<GigSource>.IndexKeys.Ascending(x => x.Name)
+                ),
+                new CreateIndexOptions { Unique = true }
+            )
+        );
+    }
+
+    private async Task InitializeGigExpenseCategoryIndexesAsync()
+    {
+        var collection = database.GigExpenseCategories;
+
+        await collection.Indexes.CreateOneAsync(
+            new CreateIndexModel<GigExpenseCategory>(
+                Builders<GigExpenseCategory>.IndexKeys.Combine(
+                    Builders<GigExpenseCategory>.IndexKeys.Ascending(x => x.UserId),
+                    Builders<GigExpenseCategory>.IndexKeys.Ascending(x => x.Name)
+                ),
+                new CreateIndexOptions { Unique = true }
+            )
+        );
+    }
+
+    private async Task InitializeGigSettingsIndexesAsync()
+    {
+        var collection = database.GigSettings;
+
+        await collection.Indexes.CreateOneAsync(
+            new CreateIndexModel<GigSettings>(
+                Builders<GigSettings>.IndexKeys.Ascending(x => x.UserId),
                 new CreateIndexOptions { Unique = true }
             )
         );

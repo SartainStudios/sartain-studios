@@ -2,7 +2,7 @@
 @using SartainStudios.Client.Layout
 @using SartainStudios.Schema.Invoice
 @attribute [Route(Metadata.Invoice.Route)]
-@attribute [Authorize]
+@attribute [Authorize(Policy = Metadata.Policy.Organization)]
 @layout Main
 <PageHeader
     Title='@(IsDetailView ? SelectedInvoice?.InvoiceNumber ?? "Invoice" : IsCreateView ? "New invoice" : "Invoices")'/>

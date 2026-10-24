@@ -16,9 +16,13 @@ public sealed partial class GoogleSignInButton(
     NavigationManager navigationManager,
     ISnackbar snackbar) : ComponentBase, IAsyncDisposable
 {
+    private const string GigModeName = "gig";
     private DotNetObjectReference<GoogleSignInButton>? _selfReference;
     [Parameter] public string RedirectUrl { get; set; } = "/";
     [Parameter] public string? OrganizationName { get; set; }
+
+    [Parameter] public bool GigMode { get; set; }
+
     [Parameter] public EventCallback<Response> OnSignedIn { get; set; }
     [Parameter] public EventCallback<bool> OnBusyChanged { get; set; }
     private string ElementId { get; } = $"google-signin-{Guid.NewGuid():N}";
@@ -71,7 +75,7 @@ public sealed partial class GoogleSignInButton(
     [JSInvokable]
     public Task OnGoogleCredential(string credential)
     {
-        return CompleteSignInAsync(credential, null);
+        return CompleteSignInAsync(credential, null, GigMode);
     }
 
     [JSInvokable]
@@ -94,7 +98,8 @@ public sealed partial class GoogleSignInButton(
 
         ErrorMessage = null;
         await SetBusyAsync(true, "Redirecting to Google...");
-        await jsRuntime.InvokeVoidAsync("googleAuthentication.signInWithRedirect", clientId, ResolveTarget(null));
+        await jsRuntime.InvokeVoidAsync("googleAuthentication.signInWithRedirect", clientId, ResolveTarget(null),
+            GigMode ? GigModeName : string.Empty);
     }
 
     private async Task<bool> TryCompleteRedirectAsync()
@@ -117,16 +122,26 @@ public sealed partial class GoogleSignInButton(
             return false;
         }
 
-        await CompleteSignInAsync(result.Credential, result.ReturnUrl);
+        await CompleteSignInAsync(result.Credential, result.ReturnUrl, result.Mode == GigModeName);
         return true;
     }
 
-    private async Task CompleteSignInAsync(string credential, string? returnUrl)
+    private async Task CompleteSignInAsync(string credential, string? returnUrl, bool gigSignIn)
     {
         ErrorMessage = null;
         await SetBusyAsync(true, "Signing you in...");
         try
         {
+            if (gigSignIn)
+            {
+                await authentication.GigGoogleSignInAsync(new GigGoogleSignInRequest(credential));
+                await authenticationStateProvider.GetAuthenticationStateAsync();
+                BusyMessage = "Taking you to your current session...";
+                StateHasChanged();
+                navigationManager.NavigateTo(ResolveTarget(returnUrl, true), false, true);
+                return;
+            }
+
             var response = await authentication.GoogleSignInAsync(new GoogleSignInRequest(
                 credential,
                 string.IsNullOrWhiteSpace(OrganizationName) ? null : OrganizationName,
@@ -156,10 +171,12 @@ public sealed partial class GoogleSignInButton(
         }
     }
 
-    private string ResolveTarget(string? returnUrl)
+    private string ResolveTarget(string? returnUrl, bool gigSignIn = false)
     {
         if (!string.IsNullOrWhiteSpace(returnUrl)) return returnUrl;
-        return string.IsNullOrWhiteSpace(RedirectUrl) ? Metadata.MainMenu.IndexRoute : RedirectUrl;
+        if (string.IsNullOrWhiteSpace(RedirectUrl) || (gigSignIn && !GigMode))
+            return gigSignIn ? Metadata.GigEarnings.CurrentSessionRoute : Metadata.MainMenu.IndexRoute;
+        return RedirectUrl;
     }
 
     private async Task SetBusyAsync(bool isBusy, string? message = null)
@@ -171,5 +188,5 @@ public sealed partial class GoogleSignInButton(
         if (OnBusyChanged.HasDelegate) await OnBusyChanged.InvokeAsync(isBusy);
     }
 
-    public sealed record RedirectResult(string? Credential, string? ReturnUrl, string? Error);
+    public sealed record RedirectResult(string? Credential, string? ReturnUrl, string? Error, string? Mode);
 }

@@ -31,6 +31,23 @@ public sealed class Session(Database database, Token token, TimeProvider timePro
         return new IssuedSession(accessToken.Value, accessToken.ExpiresAt, refreshToken, refreshTokenExpiresAt);
     }
 
+    public async Task<IssuedSession> IssueGigAsync(UserProfile user, string email, IdentityProvider provider)
+    {
+        var refreshToken = token.CreateRefreshToken();
+        var refreshTokenExpiresAt = token.GetRefreshTokenExpiration();
+        var authenticationSession = new AuthenticationSession
+        {
+            UserId = user.Id,
+            OrganizationId = ObjectId.Empty,
+            Provider = provider,
+            RefreshTokenHash = token.HashRefreshToken(refreshToken),
+            ExpiresAt = refreshTokenExpiresAt
+        };
+        await database.AuthenticationSessions.InsertOneAsync(authenticationSession);
+        var accessToken = token.CreateGigAccessToken(user, email, authenticationSession);
+        return new IssuedSession(accessToken.Value, accessToken.ExpiresAt, refreshToken, refreshTokenExpiresAt);
+    }
+
     public async Task<AuthenticationSession?> FindActiveByRefreshTokenAsync(string refreshToken)
     {
         var refreshTokenHash = token.HashRefreshToken(refreshToken);

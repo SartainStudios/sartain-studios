@@ -1,0 +1,121 @@
+@namespace SartainStudios.Client.Component
+<MudDialog Visible="@Visible" VisibleChanged="OnVisibleChangedAsync" Options="DialogOptions">
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Payments"/>
+            <MudText Typo="Typo.h6">@Title</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3">
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+            }
+            @if (Mode == GigSessionDialogMode.Stop)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Even after stopping, you can edit the session details
+                    later.
+                </MudText>
+                <MudStack Row="true" Spacing="2">
+                    <MudDatePicker Label="Start date" @bind-Date="StartDate" Disabled="IsBusy"/>
+                    <MudTimePicker Label="Start time" @bind-Time="StartTime" Disabled="IsBusy"/>
+                </MudStack>
+            }
+            else
+            {
+                <MudStack Row="true" Spacing="2">
+                    <MudDatePicker Label="Start date" @bind-Date="StartDate" Disabled="IsBusy"/>
+                    <MudTimePicker Label="Start time" @bind-Time="StartTime" Disabled="IsBusy"/>
+                </MudStack>
+                @if (Mode == GigSessionDialogMode.Create || Session is { IsOpen: false })
+                {
+                    <MudStack Row="true" Spacing="2">
+                        <MudDatePicker Label="End date" @bind-Date="EndDate" Disabled="IsBusy"/>
+                        <MudTimePicker Label="End time" @bind-Time="EndTime" Disabled="IsBusy"/>
+                    </MudStack>
+                }
+            }
+
+            <MudSelect T="string" Label="Vehicle" Value="Vehicle" ValueChanged="OnVehicleChangedAsync"
+                       Disabled="IsBusy"
+                       HelperText="@VehicleHelperText">
+                @foreach (var vehicle in VehicleOptions)
+                {
+                    <MudSelectItem T="string" Value="@vehicle.Value">@vehicle.Label</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudStack Row="true" Spacing="2">
+                <MudNumericField T="decimal?" Label="Start odometer" @bind-Value="StartOdometer" Min="0m"
+                                 HideSpinButtons="true" Disabled="IsBusy"/>
+                <MudNumericField T="decimal?" Label="End odometer" @bind-Value="EndOdometer" Min="0m"
+                                 HideSpinButtons="true" Disabled="IsBusy"/>
+            </MudStack>
+
+            <MudDivider/>
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.subtitle1">Earnings</MudText>
+                <MudSpacer/>
+                <MudButton Size="Size.Small" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="AddEarning" Disabled="IsBusy">
+                    Add earning
+                </MudButton>
+            </MudStack>
+
+            @foreach (var row in Earnings)
+            {
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Start" @key="row">
+                    <MudSelect T="string" Label="Source" @bind-Value="row.SourceId" Disabled="IsBusy"
+                               Style="flex: 2 1 0;">
+                        @foreach (var source in SourceChoices(row.SourceId))
+                        {
+                            <MudSelectItem T="string" Value="@source.Id">@source.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudNumericField T="decimal?" Label="Amount" @bind-Value="row.Amount" Min="0m"
+                                     Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.AttachMoney"
+                                     HideSpinButtons="true" Disabled="IsBusy" Style="flex: 1 1 0;"/>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                                   OnClick="() => Earnings.Remove(row)" Disabled="IsBusy"/>
+                </MudStack>
+            }
+
+            <MudDivider/>
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.subtitle1">Expenses</MudText>
+                <MudSpacer/>
+                <MudButton Size="Size.Small" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="AddExpense" Disabled="IsBusy">
+                    Add expense
+                </MudButton>
+            </MudStack>
+            @foreach (var row in Expenses)
+            {
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Start" @key="row">
+                    <MudSelect T="string" Label="Category" @bind-Value="row.CategoryId" Disabled="IsBusy"
+                               Style="flex: 2 1 0;">
+                        @foreach (var category in CategoryChoices(row.CategoryId))
+                        {
+                            <MudSelectItem T="string" Value="@category.Id">@category.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <MudNumericField T="decimal?" Label="Amount" @bind-Value="row.Amount" Min="0m"
+                                     Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.AttachMoney"
+                                     HideSpinButtons="true" Disabled="IsBusy" Style="flex: 1 1 0;"/>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small"
+                                   OnClick="() => Expenses.Remove(row)" Disabled="IsBusy"/>
+                </MudStack>
+            }
+
+            <MudTextField @bind-Value="Notes" Label="Notes" Lines="2" MaxLength="500" Disabled="IsBusy"/>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseAsync" Disabled="IsBusy">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="@(Mode == GigSessionDialogMode.Stop ? Color.Error : Color.Primary)"
+                   OnClick="SaveAsync" Disabled="IsBusy">
+            @(IsBusy ? "Saving..." : SaveText)
+        </MudButton>
+    </DialogActions>
+</MudDialog>

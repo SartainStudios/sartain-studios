@@ -3,7 +3,7 @@
 @using SartainStudios.Client.Service.Validation
 @using SartainStudios.Schema.Billing
 @attribute [Route(Metadata.BillingContract.Route)]
-@attribute [Authorize]
+@attribute [Authorize(Policy = Metadata.Policy.Organization)]
 @layout Main
 <PageHeader Title='@(SelectedContract is null ? "Billing Contracts" : SelectedContract.ProjectName)'/>
 <MudContainer MaxWidth="@(IsDetailView ? MaxWidth.Large : MaxWidth.ExtraLarge)" Class="my-4 my-sm-6">

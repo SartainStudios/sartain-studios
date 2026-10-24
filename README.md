@@ -7,6 +7,7 @@ The platform serves a dual purpose:
 1. **Public Portfolio & Services:** Request custom app and/or website development.
 2. **SaaS Platforms:**
     1. **Invoicing:** A fully-featured invoicing and time-tracking system.
+    2. **Gig Earnings** A platform for gig workers to calculate earnings and track their work hours.~~~~
 
 ## **Technology Stack**
 

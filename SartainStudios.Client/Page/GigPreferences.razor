@@ -1,0 +1,54 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@attribute [Route(Metadata.GigEarnings.SettingsRoute)]
+@attribute [Authorize]
+@layout GigMain
+<PageHeader Title="@Metadata.GigEarnings.Settings.Name"/>
+<MudContainer MaxWidth="MaxWidth.Small" Class="my-4 my-sm-6">
+    <MudStack Spacing="4">
+        <MudText Typo="Typo.h4">Settings</MudText>
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+        }
+        @if (IsLoading)
+        {
+            <LoadingSkeleton Variant="LoadingSkeletonVariant.Form" Rows="3"/>
+        }
+        else
+        {
+            <MudPaper Class="pa-6" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.h6">Mileage deduction</MudText>
+                    <MudSwitch T="bool" @bind-Value="Enabled" Color="Color.Primary" Disabled="IsBusy"
+                               Label="Show estimated IRS mileage deduction"/>
+                    <MudAlert Severity="Severity.Info" Dense="true">
+                        The IRS standard mileage rate applies to motor vehicles such as cars and motorcycles. It does
+                        not apply to bicycles or e-bikes. Pick the vehicle when you start or edit a session, and only
+                        motor vehicle miles are counted.
+                    </MudAlert>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        When on, each session, week and report shows miles &times; the IRS rate in effect on that
+                        session's
+                        date
+                        as a separate "estimated deduction", and profit both with and without it. When off, the
+                        deduction is hidden everywhere.
+                    </MudText>
+                    <MudNumericField T="decimal?" @bind-Value="RateOverride" Label="Rate override ($ per mile)"
+                                     Min="0m" Max="5m" Format="0.000" HideSpinButtons="true" Disabled="IsBusy"
+                                     HelperText="@RateHelperText" Clearable="true"/>
+                    <MudAlert Severity="Severity.Warning" Dense="true">
+                        You can deduct either the standard mileage rate or your actual vehicle expenses, not both. If
+                        you claim actual expenses, leave this off. Your expenses, such as fuel and maintenance, are
+                        tracked either way. This is an estimate, not tax advice.
+                    </MudAlert>
+                    <MudStack Row="true" Justify="Justify.FlexEnd">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="IsBusy">
+                            @(IsBusy ? "Saving..." : "Save")
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        }
+    </MudStack>
+</MudContainer>

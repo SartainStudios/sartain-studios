@@ -54,4 +54,16 @@ public sealed class Database(IMongoClient mongoClient, Mongo mongoSettings)
 
     public IMongoCollection<HourLimitNotification> HourLimitNotifications =>
         _database.GetCollection<HourLimitNotification>(nameof(HourLimitNotification));
+
+    public IMongoCollection<GigSession> GigSessions =>
+        _database.GetCollection<GigSession>(nameof(GigSession));
+
+    public IMongoCollection<GigSource> GigSources =>
+        _database.GetCollection<GigSource>(nameof(GigSource));
+
+    public IMongoCollection<GigExpenseCategory> GigExpenseCategories =>
+        _database.GetCollection<GigExpenseCategory>(nameof(GigExpenseCategory));
+
+    public IMongoCollection<GigSettings> GigSettings =>
+        _database.GetCollection<GigSettings>(nameof(GigSettings));
 }

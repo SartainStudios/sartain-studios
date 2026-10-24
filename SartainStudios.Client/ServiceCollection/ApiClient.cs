@@ -29,6 +29,10 @@ public static class ApiClient
             services.AddApiClient<Invoice>(apiBaseUrl);
             services.AddApiClient<OnboardingStatus>(apiBaseUrl);
             services.AddApiClient<Health>(apiBaseUrl);
+            services.AddApiClient<GigSession>(apiBaseUrl);
+            services.AddApiClient<GigSource>(apiBaseUrl);
+            services.AddApiClient<GigReport>(apiBaseUrl);
+            services.AddApiClient<GigSettings>(apiBaseUrl);
             services.AddHttpClient<BuildInfoService>(client => client.BaseAddress = new Uri(hostBaseAddress));
         }
 

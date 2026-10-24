@@ -158,8 +158,7 @@ public sealed class DataCache(TimeProvider timeProvider)
         }
         catch
         {
-            // A failed background refresh must never surface to the user; the stale value stays in place and the
-            // next expiry forces a foreground fetch.
+            // A failed background refresh must never surface to the user; the stale value stays in place and the next expiry forces a foreground fetch.
         }
         finally
         {

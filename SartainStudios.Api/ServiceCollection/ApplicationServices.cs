@@ -1,8 +1,9 @@
-using SartainStudios.Api.Service.Account;
+﻿using SartainStudios.Api.Service.Account;
 using SartainStudios.Api.Service.Authentication;
 using SartainStudios.Api.Service.Billing;
 using SartainStudios.Api.Service.Client;
 using SartainStudios.Api.Service.Data;
+using SartainStudios.Api.Service.Gig;
 using SartainStudios.Api.Service.Health;
 using SartainStudios.Api.Service.Invoice;
 using SartainStudios.Api.Service.Membership;
@@ -27,7 +28,7 @@ public static class ApplicationServices
         services.AddSingleton<Roster>();
         services.AddSingleton<Assignment>();
         services.AddSingleton<Sequence>();
-        services.AddSingleton<Tracker>();
+        services.AddSingleton<WorkSessionStore>();
         services.AddSingleton<Timeline>();
         services.AddSingleton<Editing>();
         services.AddSingleton(TimeProvider.System);
@@ -45,5 +46,11 @@ public static class ApplicationServices
         services.AddScoped<WorkSessionService>();
         services.AddScoped<OnboardingService>();
         services.AddScoped<HealthService>();
+        services.AddScoped<GigAuthenticationService>();
+        services.AddScoped<GigSessionService>();
+        services.AddScoped<GigSourceService>();
+        services.AddScoped<GigSettingsService>();
+        services.AddScoped<GigReportService>();
+        services.AddScoped<GigSeeder>();
     }
 }

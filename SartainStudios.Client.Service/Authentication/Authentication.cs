@@ -1,6 +1,5 @@
 using System.Net.Http.Json;
 using SartainStudios.Client.Schema;
-using SartainStudios.Client.Service.Caching;
 using SartainStudios.Schema.Authentication;
 using ApiResponse = SartainStudios.Client.Schema.Api.Response;
 
@@ -9,8 +8,7 @@ namespace SartainStudios.Client.Service.Authentication;
 public sealed class Authentication(
     HttpClient httpClient,
     TokenStore tokenStore,
-    JwtAuthenticationStateProvider stateProvider,
-    DataCache cache)
+    JwtAuthenticationStateProvider stateProvider)
 {
     private const string BaseRoute = "api/authentication";
 
@@ -33,6 +31,19 @@ public sealed class Authentication(
         CancellationToken cancellationToken = default)
     {
         return AuthenticateAsync($"{BaseRoute}/google/sign-in", request, cancellationToken);
+    }
+
+    public async Task<GigResponse> GigGoogleSignInAsync(
+        GigGoogleSignInRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var httpResponse =
+            await httpClient.PostAsJsonAsync("api/gig/authentication/google/sign-in", request, cancellationToken);
+        await ApiResponse.EnsureSuccessAsync(httpResponse);
+        var response = await httpResponse.Content.ReadFromJsonAsync<GigResponse>(cancellationToken)
+                       ?? throw new InvalidOperationException("Empty gig authentication response.");
+        await PersistGigAsync(response);
+        return response;
     }
 
     public async Task ForgotPasswordAsync(
@@ -76,7 +87,6 @@ public sealed class Authentication(
             }
 
         await tokenStore.ClearAsync();
-        cache.Clear();
         stateProvider.NotifyChanged();
     }
 
@@ -106,7 +116,6 @@ public sealed class Authentication(
 
     private async Task PersistAsync(Response response)
     {
-        cache.Clear();
         await tokenStore.SaveAsync(new StoredSession
         {
             AccessToken = response.AccessToken,
@@ -120,6 +129,25 @@ public sealed class Authentication(
             OrganizationId = response.Organization.Id,
             OrganizationName = response.Organization.Name,
             Role = response.Organization.Role
+        });
+        stateProvider.NotifyChanged();
+    }
+
+    private async Task PersistGigAsync(GigResponse response)
+    {
+        await tokenStore.SaveAsync(new StoredSession
+        {
+            AccessToken = response.AccessToken,
+            AccessTokenExpiresAt = response.AccessTokenExpiresAt,
+            RefreshToken = response.RefreshToken,
+            RefreshTokenExpiresAt = response.RefreshTokenExpiresAt,
+            UserId = response.User.Id,
+            DisplayName = response.User.DisplayName,
+            Email = response.User.Email,
+            ProfilePhotoUrl = response.User.ProfilePhotoUrl,
+            OrganizationId = string.Empty,
+            OrganizationName = string.Empty,
+            Role = string.Empty
         });
         stateProvider.NotifyChanged();
     }

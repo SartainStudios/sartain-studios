@@ -7,7 +7,7 @@ using ApiException = SartainStudios.Client.Schema.Api.Exception;
 
 namespace SartainStudios.Client.Page;
 
-public sealed partial class SignIn(
+public sealed partial class InvoicingSignIn(
     Authentication authentication,
     AuthenticationStateProvider authenticationStateProvider,
     NavigationManager navigationManager,

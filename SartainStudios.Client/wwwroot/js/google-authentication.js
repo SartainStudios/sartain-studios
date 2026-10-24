@@ -84,6 +84,7 @@
                 return {
                     credential: '',
                     returnUrl: (pending && pending.returnUrl) || '',
+                    mode: (pending && pending.mode) || '',
                     error: result.error === 'access_denied'
                         ? 'Google sign-in was cancelled.'
                         : 'Google sign-in failed. Please try again.'
@@ -99,18 +100,20 @@
             return {
                 credential: result.credential,
                 returnUrl: pending.returnUrl || '',
+                mode: pending.mode || '',
                 error: ''
             };
         },
 
-        signInWithRedirect: function (clientId, returnUrl) {
+        signInWithRedirect: function (clientId, returnUrl, mode) {
             const nonce = randomToken();
             const state = randomToken();
             try {
                 window.localStorage.setItem(pendingKey, JSON.stringify({
                     nonce: nonce,
                     state: state,
-                    returnUrl: returnUrl || '/'
+                    returnUrl: returnUrl || '/',
+                    mode: mode || ''
                 }));
             } catch (e) {
                 // ignore

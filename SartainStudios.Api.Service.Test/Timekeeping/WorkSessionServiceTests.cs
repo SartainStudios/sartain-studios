@@ -1,4 +1,4 @@
-using MongoDB.Bson;
+﻿using MongoDB.Bson;
 using SartainStudios.Api.Service.Authentication;
 using SartainStudios.Api.Service.Data;
 using SartainStudios.Api.Service.Invoice;
@@ -24,12 +24,12 @@ public sealed class WorkSessionServiceTests
     {
         var currentTenant = tenant ?? TestTenant.Anonymous();
         var access = new Access(harness.Database, currentTenant);
-        var tracker = new Tracker(harness.Database);
+        var sessionStore = new WorkSessionStore(harness.Database);
         var lookup = new Lookup(harness.Database);
         var timeline = new Timeline(harness.Database, lookup);
         var draft = new Draft(harness.Database);
         var editing = new Editing(harness.Database, harness.Client, draft);
-        return new WorkSessionService(access, tracker, timeline, editing, draft,
+        return new WorkSessionService(access, sessionStore, timeline, editing, draft,
             timeProvider ?? new StaticTimeProvider(DateTimeOffset.UtcNow));
     }
 

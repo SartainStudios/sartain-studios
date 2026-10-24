@@ -44,6 +44,33 @@ public sealed class Token(Jwt jwtSettings)
         return new TokenResult(accessToken, expiresAt);
     }
 
+    public TokenResult CreateGigAccessToken(UserProfile user, string email, AuthenticationSession session)
+    {
+        var now = DateTime.UtcNow;
+        var expiresAt = now.AddMinutes(jwtSettings.AccessTokenMinutes);
+
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Name, user.DisplayName),
+            new Claim(JwtRegisteredClaimNames.Email, email),
+            new Claim(nameof(JwtClaimName.SessionId), session.Id.ToString())
+        };
+
+        var credentials = new SigningCredentials(GetSigningKey(), SecurityAlgorithms.HmacSha256);
+        var descriptor = new JwtSecurityToken(
+            jwtSettings.Issuer,
+            jwtSettings.Audience,
+            claims,
+            now,
+            expiresAt,
+            credentials
+        );
+
+        var accessToken = new JwtSecurityTokenHandler().WriteToken(descriptor);
+        return new TokenResult(accessToken, expiresAt);
+    }
+
     public string CreateRefreshToken()
     {
         return CreateSecureToken();
