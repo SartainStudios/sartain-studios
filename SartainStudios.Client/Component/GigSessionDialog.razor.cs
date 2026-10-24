@@ -59,7 +59,7 @@ public sealed partial class GigSessionDialog
     private string Title => Mode switch
     {
         GigSessionDialogMode.Stop => "End session",
-        GigSessionDialogMode.Create => "Log a session",
+        GigSessionDialogMode.Create => "Add session",
         _ => "Edit session"
     };
 

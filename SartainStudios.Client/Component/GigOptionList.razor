@@ -5,7 +5,8 @@
             <MudTextField T="string" @bind-Value="NewName" Label="@($"New {Noun}")" MaxLength="50" Disabled="IsBusy"
                           Style="flex: 1 1 auto;" OnKeyUp="OnNewKeyUp"/>
             <input type="color" value="@NewColor" @onchange="OnNewColorChanged" disabled="@IsBusy"
-                   aria-label="Color" style="width: 44px; height: 40px; border: none; background: none;"/>
+                   aria-label="Color" title="Pick a color"
+                   style="@ColorInputStyle(44, 40)"/>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
                        OnClick="CreateAsync" Disabled="IsBusy || string.IsNullOrWhiteSpace(NewName)">
                 Add
@@ -26,8 +27,8 @@
                             <MudTextField T="string" @bind-Value="EditName" MaxLength="50"
                                           Disabled="IsBusy" Style="flex: 1 1 auto;"/>
                             <input type="color" value="@EditColor" @onchange="OnEditColorChanged"
-                                   aria-label="Color"
-                                   style="width: 36px; height: 32px; border: none; background: none;"/>
+                                   aria-label="Color" title="Pick a color"
+                                   style="@ColorInputStyle(36, 32)"/>
                             <MudIconButton Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small"
                                            OnClick="SaveEditAsync" Disabled="IsBusy"/>
                             <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
