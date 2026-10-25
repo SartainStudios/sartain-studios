@@ -21,6 +21,7 @@ public partial class SectionAppBar(
 
     private string CurrentPageTitle => pageTitleState.Title;
     private string? DisplayName { get; set; }
+    private string? ProfilePhotoUrl { get; set; }
 
     public void Dispose()
     {
@@ -39,6 +40,7 @@ public partial class SectionAppBar(
     {
         var session = await tokenStore.LoadAsync();
         DisplayName = session?.DisplayName;
+        ProfilePhotoUrl = session?.ProfilePhotoUrl;
     }
 
     private Task DrawerToggle()
