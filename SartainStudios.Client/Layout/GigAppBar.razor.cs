@@ -16,6 +16,7 @@ public partial class GigAppBar(
 
     private string CurrentPageTitle => pageTitleState.Title;
     private string? DisplayName { get; set; }
+    private string? ProfilePhotoUrl { get; set; }
 
     public void Dispose()
     {
@@ -27,6 +28,7 @@ public partial class GigAppBar(
         pageTitleState.Changed += OnPageTitleChanged;
         var session = await tokenStore.LoadAsync();
         DisplayName = session?.DisplayName;
+        ProfilePhotoUrl = session?.ProfilePhotoUrl;
     }
 
     private Task DrawerToggle()

@@ -19,6 +19,7 @@ public partial class MainAppBar(
 {
     [Parameter] public EventCallback OnDrawerToggle { get; set; }
 
+    private string? ProfilePhotoUrl { get; set; }
     private string? CurrentOrganizationId { get; set; }
     private string? CurrentOrganizationName { get; set; }
     private List<OrganizationSummary>? OtherOrganizations { get; set; }
@@ -64,6 +65,7 @@ public partial class MainAppBar(
     private async Task RefreshAsync()
     {
         var session = await tokenStore.LoadAsync();
+        ProfilePhotoUrl = session?.ProfilePhotoUrl;
         if (session is null || string.IsNullOrWhiteSpace(session.OrganizationId))
         {
             CurrentOrganizationId = null;
