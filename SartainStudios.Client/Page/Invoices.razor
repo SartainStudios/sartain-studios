@@ -3,7 +3,7 @@
 @using SartainStudios.Schema.Invoice
 @attribute [Route(Metadata.Invoice.Route)]
 @attribute [Authorize(Policy = Metadata.Policy.Organization)]
-@layout Main
+@layout InvoicingLayout
 <PageHeader
     Title='@(IsDetailView ? SelectedInvoice?.InvoiceNumber ?? "Invoice" : IsCreateView ? "New invoice" : "Invoices")'/>
 <MudContainer MaxWidth="@(IsDetailView || IsCreateView ? MaxWidth.Large : MaxWidth.ExtraLarge)" Class="my-6">

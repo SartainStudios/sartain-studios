@@ -11,16 +11,15 @@ public partial class Buttons : ComponentBase
     private const string ActionIcon = Icons.Material.Filled.ArrowForward;
 
     private static readonly MenuItem AdministrationItem = new(
-        "User Administration",
-        "View and manage every user of the application",
-        Metadata.Administration.Users.Icon,
+        "Administration",
+        "Manage users and monitor system health",
+        Metadata.Administration.Index.Icon,
         [
-            "View all users",
-            "Update user details",
-            "Delete users"
+            "View, update, and delete users",
+            "Check system health"
         ],
-        Metadata.Administration.UsersRoute,
-        "Manage users");
+        Metadata.Administration.IndexRoute,
+        "Open administration");
 
     private static readonly MenuItem[] Items =
     [
@@ -81,7 +80,6 @@ public partial class Buttons : ComponentBase
             IsAdministrator = false;
         }
     }
-
 
     private sealed record MenuItem(
         string Title,

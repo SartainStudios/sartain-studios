@@ -4,7 +4,7 @@
 @using SartainStudios.Schema.User
 @attribute [Route(Metadata.Account.Route)]
 @attribute [Authorize]
-@layout Main
+@layout InvoicingLayout
 <PageHeader Title="Account"/>
 <MudContainer MaxWidth="MaxWidth.Medium" Class="my-6">
     @if (Account is null)

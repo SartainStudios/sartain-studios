@@ -4,7 +4,7 @@
 @using SartainStudios.Schema.Invoice
 @attribute [Route(Metadata.Client.Route)]
 @attribute [Authorize(Policy = Metadata.Policy.Organization)]
-@layout Main
+@layout InvoicingLayout
 <PageHeader Title='@(SelectedClient is null ? "Clients" : SelectedClient.CompanyName)'/>
 <MudContainer MaxWidth="@(IsDetailView ? MaxWidth.Large : MaxWidth.ExtraLarge)" Class="my-4 my-sm-6">
     <MudStack Spacing="4">

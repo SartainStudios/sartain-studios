@@ -1,11 +1,9 @@
-﻿@using Metadata = SartainStudios.Client.Page.Metadata
-<MudDrawer Open="Open"
-           OpenChanged="OpenChanged"
-           ClipMode="DrawerClipMode.Always"
-           Elevation="2"
-           Variant="DrawerVariant.Responsive"
-           Breakpoint="Breakpoint.Sm">
-    <MudNavMenu>
+@using Metadata = SartainStudios.Client.Page.Metadata
+@inherits LayoutComponentBase
+<SectionShell HomeIcon="@Metadata.Invoicing.DashboardInfo.Icon"
+              HomeRoute="@Metadata.Invoicing.DashboardInfo.Route"
+              ShowBuildInfo="true">
+    <NavLinks>
         <MudNavLink Href="@Metadata.Invoicing.DashboardRoute" Icon="@Metadata.Invoicing.DashboardInfo.Icon">
             @Metadata.Invoicing.DashboardInfo.Name
         </MudNavLink>
@@ -27,16 +25,13 @@
         <MudNavLink Href="@Metadata.Invoice.Route" Icon="@Metadata.Invoice.Info.Icon">
             @Metadata.Invoice.Info.Name
         </MudNavLink>
-        <MudTooltip Text="@(BuildCommitMessage ?? "No commit message")">
-            <MudNavLink Icon="@Icons.Material.Filled.Info" Disabled="true">
-                @(!string.IsNullOrWhiteSpace(BuildVersion) ? BuildVersion : "Development")
-            </MudNavLink>
-        </MudTooltip>
-    </MudNavMenu>
-    <MudDivider/>
-    <MudNavLink Href="@Metadata.MainMenu.StayRoute"
-                Match="NavLinkMatch.All"
-                Icon="@Metadata.MainMenu.IndexInfo.Icon">
-        Exit to Main Menu
-    </MudNavLink>
-</MudDrawer>
+    </NavLinks>
+    <AccountMenuItems>
+        <MudMenuItem Icon="@Metadata.Account.IndexInfo.Icon" Href="@Metadata.Account.IndexInfo.Route">
+            @Metadata.Account.IndexInfo.Name
+        </MudMenuItem>
+    </AccountMenuItems>
+    <ChildContent>
+        @Body
+    </ChildContent>
+</SectionShell>
