@@ -1,0 +1,43 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@attribute [Route(Metadata.Administration.IndexRoute)]
+@attribute [Authorize]
+@layout AdministrationLayout
+@if (IsAuthorized)
+{
+    <PageHeader Title="@Metadata.Administration.Index.Name"/>
+    <MudContainer MaxWidth="MaxWidth.Large" Class="my-4 my-sm-6">
+        <MudStack Spacing="4">
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.h4">Administration</MudText>
+                <MudText Color="Color.Secondary">Manage users and monitor the health of the application.</MudText>
+            </MudStack>
+            <MudGrid Spacing="4">
+                @foreach (var item in Items)
+                {
+                    <MudItem xs="12" md="6">
+                        <MudButton Href="@item.Route"
+                                   Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   FullWidth="true"
+                                   Class="pa-6 rounded-lg"
+                                   Style="height: 100%; text-transform: none; text-align: left;">
+                            <MudStack Row="true" Spacing="4" AlignItems="AlignItems.Center" Style="width: 100%;">
+                                <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Large">
+                                    <MudIcon Icon="@item.Icon" Size="Size.Large"/>
+                                </MudAvatar>
+                                <MudStack Spacing="0">
+                                    <MudText Typo="Typo.h5" Style="font-weight: 600;">@item.Title</MudText>
+                                    <MudText Typo="Typo.body2" Class="mud-text-secondary"
+                                             Style="white-space: normal;">
+                                        @item.Description
+                                    </MudText>
+                                </MudStack>
+                            </MudStack>
+                        </MudButton>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudStack>
+    </MudContainer>
+}

@@ -1,7 +1,9 @@
 @using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
 @using SartainStudios.Schema.Health
 @attribute [Route(Metadata.SystemHealth.Route)]
 @attribute [Authorize]
+@layout AdministrationLayout
 <PageHeader Title="@Metadata.SystemHealth.Info.Name"/>
 <MudContainer MaxWidth="MaxWidth.Large" Class="my-4 my-sm-6">
     <MudStack Spacing="4">

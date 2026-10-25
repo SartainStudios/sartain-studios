@@ -1,0 +1,25 @@
+@using Metadata = SartainStudios.Client.Page.Metadata
+<MudDrawer Open="Open"
+           OpenChanged="OpenChanged"
+           ClipMode="DrawerClipMode.Always"
+           Elevation="2"
+           Variant="DrawerVariant.Responsive"
+           Breakpoint="Breakpoint.Sm">
+    <MudNavMenu>
+        @NavLinks
+        @if (ShowBuildInfo)
+        {
+            <MudTooltip Text="@(BuildCommitMessage ?? "No commit message")">
+                <MudNavLink Icon="@Icons.Material.Filled.Info" Disabled="true">
+                    @(!string.IsNullOrWhiteSpace(BuildVersion) ? BuildVersion : "Development")
+                </MudNavLink>
+            </MudTooltip>
+        }
+    </MudNavMenu>
+    <MudDivider/>
+    <MudNavLink Href="@Metadata.MainMenu.StayRoute"
+                Match="NavLinkMatch.All"
+                Icon="@Metadata.MainMenu.IndexInfo.Icon">
+        Exit to Main Menu
+    </MudNavLink>
+</MudDrawer>

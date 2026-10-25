@@ -3,7 +3,7 @@
 @using SartainStudios.Schema.User
 @attribute [Route(Metadata.Administration.UsersRoute)]
 @attribute [Authorize]
-@layout Main
+@layout AdministrationLayout
 @if (IsAuthorized)
 {
     <PageHeader Title="@Metadata.Administration.Users.Name"/>

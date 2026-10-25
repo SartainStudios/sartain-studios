@@ -3,7 +3,7 @@
 @using SartainStudios.Schema.Project
 @attribute [Route(Metadata.Project.Route)]
 @attribute [Authorize(Policy = Metadata.Policy.Organization)]
-@layout Main
+@layout InvoicingLayout
 <PageHeader Title='@(SelectedProject is null ? "Projects" : SelectedProject.Name)'/>
 <MudContainer MaxWidth="@(IsDetailView ? MaxWidth.Large : MaxWidth.ExtraLarge)" Class="my-4 my-sm-6">
     <MudStack Spacing="4">

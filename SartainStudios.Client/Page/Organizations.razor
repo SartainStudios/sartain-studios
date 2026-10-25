@@ -4,7 +4,7 @@
 @using SartainStudios.Schema.Membership
 @attribute [Route(Metadata.Organization.Route)]
 @attribute [Authorize(Policy = Metadata.Policy.Organization)]
-@layout Main
+@layout InvoicingLayout
 <PageHeader Title="Organization"/>
 <MudContainer MaxWidth="MaxWidth.Large" Class="my-4 my-sm-6">
     <MudStack Spacing="4">
