@@ -54,6 +54,18 @@ public static class AccountErrors
         "Account.DeletionConflict",
         "Account deletion failed due to a data conflict. Please try again.");
 
+    public static readonly Error AdministrationNotFound = Error.NotFound(
+        "Administration.NotFound",
+        "The requested resource was not found.");
+
+    public static readonly Error UserNotFound = Error.NotFound(
+        "Administration.UserNotFound",
+        "That user could not be found.");
+
+    public static readonly Error CannotModifySelf = Error.Validation(
+        "Administration.CannotModifySelf",
+        "Administrators cannot remove their own administrator status or delete their own account here.");
+
     public static string NewPasswordTooShort(int minimumLength)
     {
         return $"New password must be at least {minimumLength} characters.";

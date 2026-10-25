@@ -207,7 +207,7 @@ public sealed class AccountService(
             membership.HourLimitWarningMinutes);
     }
 
-    private static Result<ProfileDetails> ValidateProfile(string? displayName, string? profilePhotoUrl)
+    internal static Result<ProfileDetails> ValidateProfile(string? displayName, string? profilePhotoUrl)
     {
         var errors = new List<(string Field, string Message)>();
         var trimmedDisplayName = displayName?.Trim() ?? string.Empty;
@@ -255,5 +255,5 @@ public sealed class AccountService(
 
     private readonly record struct AccountContext(UserProfile User, MembershipEntity Membership);
 
-    private sealed record ProfileDetails(string DisplayName, string? ProfilePhotoUrl);
+    internal sealed record ProfileDetails(string DisplayName, string? ProfilePhotoUrl);
 }
