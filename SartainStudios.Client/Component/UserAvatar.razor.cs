@@ -7,7 +7,7 @@ public partial class UserAvatar
 {
     private bool _imageFailed;
     private string? _lastPhotoUrl;
-    
+
     [Parameter] public string? PhotoUrl { get; set; }
     [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
 
