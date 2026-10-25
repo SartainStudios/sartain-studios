@@ -20,6 +20,7 @@ public static class ApiClient
                 client => client.BaseAddress = new Uri(apiBaseUrl));
             services.AddApiClient<Authentication>(apiBaseUrl);
             services.AddApiClient<Account>(apiBaseUrl);
+            services.AddApiClient<UserAdministration>(apiBaseUrl);
             services.AddApiClient<Organization>(apiBaseUrl);
             services.AddApiClient<Membership>(apiBaseUrl);
             services.AddApiClient<Project>(apiBaseUrl);

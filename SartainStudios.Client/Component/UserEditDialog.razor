@@ -1,0 +1,41 @@
+@namespace SartainStudios.Client.Component
+<MudDialog Visible="@Visible" VisibleChanged="OnVisibleChangedAsync" Options="DialogOptions">
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Edit"/>
+            <MudText Typo="Typo.h6">Edit user</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3">
+            @if (User is not null)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @(User.Emails.Count == 0 ? "No email on file" : string.Join(", ", User.Emails))
+                </MudText>
+            }
+            <MudTextField T="string" Label="Display name" @bind-Value="DisplayName" Required="true"
+                          Disabled="IsBusy"/>
+            <MudTextField T="string" Label="Profile photo URL" @bind-Value="ProfilePhotoUrl" Disabled="IsBusy"/>
+            <MudSwitch T="bool" Label="Administrator" @bind-Value="IsAdministrator" Color="Color.Warning"
+                       Disabled="@(IsBusy || IsSelf)"/>
+            @if (IsSelf)
+            {
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    You cannot remove your own administrator access.
+                </MudText>
+            }
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseAsync" Disabled="IsBusy">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync"
+                   Disabled="@(IsBusy || string.IsNullOrWhiteSpace(DisplayName))">
+            @(IsBusy ? "Saving..." : "Save")
+        </MudButton>
+    </DialogActions>
+</MudDialog>

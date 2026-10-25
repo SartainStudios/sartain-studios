@@ -1,0 +1,20 @@
+@using Metadata = SartainStudios.Client.Page.Metadata
+@inherits LayoutComponentBase
+<SectionShell HomeIcon="@Metadata.Administration.Index.Icon"
+              HomeRoute="@Metadata.Administration.IndexRoute">
+    <NavLinks>
+        <MudNavLink Href="@Metadata.Administration.IndexRoute" Match="NavLinkMatch.All"
+                    Icon="@Metadata.Administration.Index.Icon">
+            @Metadata.Administration.Index.Name
+        </MudNavLink>
+        <MudNavLink Href="@Metadata.Administration.UsersRoute" Icon="@Metadata.Administration.Users.Icon">
+            @Metadata.Administration.Users.Name
+        </MudNavLink>
+        <MudNavLink Href="@Metadata.SystemHealth.Route" Icon="@Metadata.SystemHealth.Info.Icon">
+            @Metadata.SystemHealth.Info.Name
+        </MudNavLink>
+    </NavLinks>
+    <ChildContent>
+        @Body
+    </ChildContent>
+</SectionShell>

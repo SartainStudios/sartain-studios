@@ -41,6 +41,7 @@ public static class ApplicationServices
         services.AddScoped<BillingContractService>();
         services.AddScoped<InvoiceService>();
         services.AddScoped<AccountService>();
+        services.AddScoped<UserAdministrationService>();
         services.AddScoped<AuthenticationService>();
         services.AddScoped<Access>();
         services.AddScoped<WorkSessionService>();

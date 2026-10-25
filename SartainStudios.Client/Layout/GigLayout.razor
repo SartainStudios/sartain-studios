@@ -1,11 +1,8 @@
 @using Metadata = SartainStudios.Client.Page.Metadata
-<MudDrawer Open="Open"
-           OpenChanged="OpenChanged"
-           ClipMode="DrawerClipMode.Always"
-           Elevation="2"
-           Variant="DrawerVariant.Responsive"
-           Breakpoint="Breakpoint.Sm">
-    <MudNavMenu>
+@inherits LayoutComponentBase
+<SectionShell HomeIcon="@Metadata.GigEarnings.SectionIcon"
+              HomeRoute="@Metadata.GigEarnings.CurrentSessionRoute">
+    <NavLinks>
         <MudNavLink Href="@Metadata.GigEarnings.CurrentSessionRoute" Match="NavLinkMatch.All"
                     Icon="@Metadata.GigEarnings.CurrentSession.Icon">
             @Metadata.GigEarnings.CurrentSession.Name
@@ -22,11 +19,8 @@
         <MudNavLink Href="@Metadata.GigEarnings.SettingsRoute" Icon="@Metadata.GigEarnings.Settings.Icon">
             @Metadata.GigEarnings.Settings.Name
         </MudNavLink>
-    </MudNavMenu>
-    <MudDivider/>
-    <MudNavLink Href="@Metadata.MainMenu.StayRoute"
-                Match="NavLinkMatch.All"
-                Icon="@Metadata.MainMenu.IndexInfo.Icon">
-        Exit to Main Menu
-    </MudNavLink>
-</MudDrawer>
+    </NavLinks>
+    <ChildContent>
+        @Body
+    </ChildContent>
+</SectionShell>

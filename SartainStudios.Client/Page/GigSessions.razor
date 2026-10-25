@@ -3,7 +3,7 @@
 @using SartainStudios.Schema.Gig
 @attribute [Route(Metadata.GigEarnings.SessionsRoute)]
 @attribute [Authorize]
-@layout GigMain
+@layout GigLayout
 <PageHeader Title="@Metadata.GigEarnings.Sessions.Name"/>
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4 my-sm-6">
     <MudStack Spacing="4">
@@ -13,13 +13,9 @@
                 <MudText Color="Color.Secondary">Newest first. Edit or delete any session at any time.</MudText>
             </MudStack>
             <MudSpacer/>
-            <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadAsync"
-                       Disabled="IsBusy || IsLoading">
-                Refresh
-            </MudButton>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
-                       OnClick="OpenCreate" Disabled="IsBusy">
-                Add
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="@Metadata.GigEarnings.CurrentSessionRoute"
+                       StartIcon="@Metadata.GigEarnings.CurrentSession.Icon">
+                Current Session
             </MudButton>
         </MudStack>
         @if (!string.IsNullOrWhiteSpace(ErrorMessage))
@@ -110,3 +106,7 @@
                Icon="@Icons.Material.Filled.Delete"
                IsBusy="IsBusy"
                OnConfirm="DeleteAsync"/>
+
+<MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreate"
+        Disabled="IsBusy" title="New session"
+        Style="position:fixed; bottom:24px; right:24px; z-index:1000;"/>

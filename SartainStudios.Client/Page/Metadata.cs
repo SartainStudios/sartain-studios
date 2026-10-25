@@ -19,6 +19,17 @@ public static class Metadata
         public static readonly PageInfo SignIn = new(SignInRoute, "Sign In", Icons.Material.Filled.Login);
     }
 
+    public static class Administration
+    {
+        public const string IndexRoute = "/administration";
+        public const string UsersRoute = IndexRoute + "/users";
+
+        public static readonly PageInfo Index =
+            new(IndexRoute, "Administration", Icons.Material.Filled.AdminPanelSettings);
+
+        public static readonly PageInfo Users = new(UsersRoute, "Users", Icons.Material.Filled.People);
+    }
+
     public static class BillingContract
     {
         public const string Route = "/billing-contracts";
