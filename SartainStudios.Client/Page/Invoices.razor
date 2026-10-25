@@ -386,18 +386,17 @@
                                         <MudTd DataLabel="Ended">@context.EndTime.ToLocalTime().ToString("g")</MudTd>
                                         <MudTd DataLabel="Duration">@FormatDuration(context.MinutesWorked)</MudTd>
                                     </RowTemplate>
-                                    <FooterContent>
-                                        <MudTd colspan="4">
-                                            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="4" Class="pa-2">
-                                                <MudText Typo="Typo.body2">
-                                                    <strong>Selected:</strong> @FormatDuration(SelectedTotalMinutes)
-                                                </MudText>
-                                                <MudText Typo="Typo.body2"><strong>Estimated
-                                                        total:</strong> @EstimatedTotal.ToString("C")</MudText>
-                                            </MudStack>
-                                        </MudTd>
-                                    </FooterContent>
                                 </MudTable>
+                                <MudPaper Outlined="true" Class="pa-3">
+                                    <MudStack Row="true" Justify="Justify.FlexEnd" Wrap="Wrap.Wrap" Spacing="4">
+                                        <MudText Typo="Typo.body2">
+                                            <strong>Selected:</strong> @FormatDuration(SelectedTotalMinutes)
+                                        </MudText>
+                                        <MudText Typo="Typo.body2">
+                                            <strong>Estimated total:</strong> @EstimatedTotal.ToString("C")
+                                        </MudText>
+                                    </MudStack>
+                                </MudPaper>
                             }
                         </MudStack>
                     </MudPaper>
