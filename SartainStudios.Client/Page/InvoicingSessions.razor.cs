@@ -5,7 +5,7 @@ using SartainStudios.Schema.WorkSession;
 
 namespace SartainStudios.Client.Page;
 
-public sealed partial class Sessions(
+public sealed partial class InvoicingSessions(
     WorkSession workSession,
     NavigationManager navigationManager,
     ISnackbar snackbar)
@@ -49,11 +49,6 @@ public sealed partial class Sessions(
             return;
         _lastId = Id;
         _lastEditRequested = EditRequested;
-        await LoadCurrentViewAsync();
-    }
-
-    private async Task RefreshAsync()
-    {
         await LoadCurrentViewAsync();
     }
 
