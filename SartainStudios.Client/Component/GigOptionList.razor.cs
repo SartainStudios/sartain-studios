@@ -32,10 +32,12 @@ public sealed partial class GigOptionList
         if (args.Key == "Enter" && !IsBusy) await CreateAsync();
     }
 
-    private static string ColorInputStyle(int width, int height) =>
-        $"width: {width}px; height: {height}px; padding: 4px; cursor: pointer; " +
-        "border: 1px solid var(--mud-palette-lines-inputs); border-radius: var(--mud-default-borderradius); " +
-        "background: var(--mud-palette-surface); flex: none;";
+    private static string ColorInputStyle(int width, int height)
+    {
+        return $"width: {width}px; height: {height}px; padding: 4px; cursor: pointer; " +
+               "border: 1px solid var(--mud-palette-lines-inputs); border-radius: var(--mud-default-borderradius); " +
+               "background: var(--mud-palette-surface); flex: none;";
+    }
 
     private void OnNewColorChanged(ChangeEventArgs args)
     {

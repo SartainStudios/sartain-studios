@@ -1,0 +1,12 @@
+<MudLayout>
+    <SectionAppBar OnDrawerToggle="DrawerToggle"
+                   HomeIcon="@HomeIcon"
+                   HomeRoute="@HomeRoute"
+                   AccountMenuItems="AccountMenuItems"/>
+    <SectionDrawer @bind-Open="_drawerOpen"
+                   NavLinks="NavLinks"
+                   ShowBuildInfo="ShowBuildInfo"/>
+    <MudMainContent>
+        @ChildContent
+    </MudMainContent>
+</MudLayout>

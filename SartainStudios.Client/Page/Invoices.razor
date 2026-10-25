@@ -3,7 +3,7 @@
 @using SartainStudios.Schema.Invoice
 @attribute [Route(Metadata.Invoice.Route)]
 @attribute [Authorize(Policy = Metadata.Policy.Organization)]
-@layout Main
+@layout InvoicingLayout
 <PageHeader
     Title='@(IsDetailView ? SelectedInvoice?.InvoiceNumber ?? "Invoice" : IsCreateView ? "New invoice" : "Invoices")'/>
 <MudContainer MaxWidth="@(IsDetailView || IsCreateView ? MaxWidth.Large : MaxWidth.ExtraLarge)" Class="my-6">
@@ -15,7 +15,8 @@
         @if (IsDetailView)
         {
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack"
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.ArrowBack"
                            Href="@Metadata.Invoice.Route">
                     Invoices
                 </MudButton>
@@ -311,7 +312,8 @@
             <MudStack Row="true" AlignItems="AlignItems.Center">
                 <MudText Typo="Typo.h4">New invoice</MudText>
                 <MudSpacer/>
-                <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="CloseCreate">
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="CloseCreate">
                     Invoices
                 </MudButton>
             </MudStack>
@@ -386,18 +388,17 @@
                                         <MudTd DataLabel="Ended">@context.EndTime.ToLocalTime().ToString("g")</MudTd>
                                         <MudTd DataLabel="Duration">@FormatDuration(context.MinutesWorked)</MudTd>
                                     </RowTemplate>
-                                    <FooterContent>
-                                        <MudTd colspan="4">
-                                            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="4" Class="pa-2">
-                                                <MudText Typo="Typo.body2">
-                                                    <strong>Selected:</strong> @FormatDuration(SelectedTotalMinutes)
-                                                </MudText>
-                                                <MudText Typo="Typo.body2"><strong>Estimated
-                                                        total:</strong> @EstimatedTotal.ToString("C")</MudText>
-                                            </MudStack>
-                                        </MudTd>
-                                    </FooterContent>
                                 </MudTable>
+                                <MudPaper Outlined="true" Class="pa-3">
+                                    <MudStack Row="true" Justify="Justify.FlexEnd" Wrap="Wrap.Wrap" Spacing="4">
+                                        <MudText Typo="Typo.body2">
+                                            <strong>Selected:</strong> @FormatDuration(SelectedTotalMinutes)
+                                        </MudText>
+                                        <MudText Typo="Typo.body2">
+                                            <strong>Estimated total:</strong> @EstimatedTotal.ToString("C")
+                                        </MudText>
+                                    </MudStack>
+                                </MudPaper>
                             }
                         </MudStack>
                     </MudPaper>

@@ -1,0 +1,96 @@
+@using Microsoft.AspNetCore.Authorization
+@using SartainStudios.Client.Layout
+@using SartainStudios.Schema.User
+@attribute [Route(Metadata.Administration.UsersRoute)]
+@attribute [Authorize]
+@layout AdministrationLayout
+@if (IsAuthorized)
+{
+    <PageHeader Title="@Metadata.Administration.Users.Name"/>
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4 my-sm-6">
+        <MudStack Spacing="4">
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+            }
+            <MudStack Row="true" AlignItems="AlignItems.Center">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h4">Users</MudText>
+                    <MudText Color="Color.Secondary">View, update, and delete users of the application.</MudText>
+                </MudStack>
+                <MudSpacer/>
+            </MudStack>
+            @if (IsLoading)
+            {
+                <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="5" Columns="5"/>
+            }
+            else if (Users.Count == 0)
+            {
+                <MudAlert Severity="Severity.Info" Dense="true">No users found.</MudAlert>
+            }
+            else
+            {
+                <MudTextField T="string" @bind-Value="SearchText" Label="Search" Immediate="true"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                              Variant="Variant.Outlined" Margin="Margin.Dense"/>
+                <MudTable T="AdministratorUserResponse" Items="FilteredUsers" Dense="true" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Name</MudTh>
+                        <MudTh>Email</MudTh>
+                        <MudTh>Role</MudTh>
+                        <MudTh>Joined</MudTh>
+                        <MudTh Style="text-align:right;">Actions</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Name">@context.DisplayName</MudTd>
+                        <MudTd DataLabel="Email">
+                            @(context.Emails.Count == 0 ? "-" : string.Join(", ", context.Emails))
+                        </MudTd>
+                        <MudTd DataLabel="Role">
+                            @if (context.IsAdministrator)
+                            {
+                                <MudChip T="string" Color="Color.Warning" Size="Size.Small"
+                                         Icon="@Icons.Material.Filled.AdminPanelSettings">
+                                    Administrator
+                                </MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Size="Size.Small">User</MudChip>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Joined">@context.CreatedAt.ToLocalTime().ToString("d")</MudTd>
+                        <MudTd DataLabel="Actions" Style="text-align:right;">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                           OnClick="() => OpenEdit(context)" Disabled="IsBusy"
+                                           title="Edit user"/>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                                           Color="Color.Error"
+                                           OnClick="() => OpenDelete(context)"
+                                           Disabled="@(IsBusy || IsSelf(context))"
+                                           title="@(IsSelf(context) ? "You cannot delete yourself here" : "Delete user")"/>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudStack>
+    </MudContainer>
+}
+
+<UserEditDialog Visible="@EditVisible"
+                VisibleChanged="OnEditVisibleChanged"
+                User="Selected"
+                IsSelf="@(Selected is not null && IsSelf(Selected))"
+                IsBusy="IsBusy"
+                ErrorMessage="@EditErrorMessage"
+                OnSave="SaveAsync"/>
+<ConfirmDialog Visible="@DeleteVisible"
+               VisibleChanged="OnDeleteVisibleChanged"
+               Title="Delete user?"
+               Message="@($"{Selected?.DisplayName} will be permanently deleted.")"
+               Details="Their profile, sign-in methods, and time sessions are removed. Organizations they solely own, with all of their data, are deleted too. This cannot be undone."
+               ConfirmText="Delete"
+               ConfirmColor="Color.Error"
+               Icon="@Icons.Material.Filled.Delete"
+               IsBusy="IsBusy"
+               OnConfirm="DeleteAsync"/>

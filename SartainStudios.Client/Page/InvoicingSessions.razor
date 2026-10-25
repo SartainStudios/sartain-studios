@@ -3,14 +3,14 @@
 @using SartainStudios.Schema.WorkSession
 @attribute [Route(Metadata.Invoicing.SessionsRoute)]
 @attribute [Authorize(Policy = Metadata.Policy.Organization)]
-@layout Main
+@layout InvoicingLayout
 <PageHeader Title='@(IsEditView ? "Edit Session" : "Sessions")'/>
 <MudContainer MaxWidth="@(IsEditView ? MaxWidth.Large : MaxWidth.ExtraLarge)" Class="my-4 my-sm-6">
     <MudStack Spacing="4">
         @if (IsEditView)
         {
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                <MudButton Variant="Variant.Text" Href="@Metadata.Invoicing.SessionsRoute"
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="@Metadata.Invoicing.SessionsRoute"
                            StartIcon="@Icons.Material.Filled.ArrowBack">
                     Sessions
                 </MudButton>
