@@ -1,7 +1,8 @@
 @using Metadata = SartainStudios.Client.Page.Metadata
 @inherits LayoutComponentBase
 <SectionShell HomeIcon="@Metadata.GigEarnings.SectionIcon"
-              HomeRoute="@Metadata.GigEarnings.CurrentSessionRoute">
+              HomeRoute="@Metadata.GigEarnings.CurrentSessionRoute"
+              ShowBuildInfo="true">
     <NavLinks>
         <MudNavLink Href="@Metadata.GigEarnings.CurrentSessionRoute" Match="NavLinkMatch.All"
                     Icon="@Metadata.GigEarnings.CurrentSession.Icon">
