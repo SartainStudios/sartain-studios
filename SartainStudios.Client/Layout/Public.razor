@@ -1,5 +1,7 @@
 @using Metadata = SartainStudios.Client.Page.Metadata
 @inherits LayoutComponentBase
+@inject Service.Health HealthService
+
 <MudLayout>
     <MudAppBar Elevation="1">
         <MudLink Href="@Metadata.MainMenu.IndexRoute"
@@ -9,6 +11,22 @@
                  Class="ml-3">
             Sartain Studios LLC
         </MudLink>
+        <MudSpacer/>
+        <MudTooltip Text="@(_isOnline switch
+                          {
+                              null => "Checking status...",
+                              true => "Online",
+                              _ => "Unable to reach backend"
+                          })">
+            <MudIcon Icon="@Icons.Material.Filled.Circle"
+                     Color="@(_isOnline switch
+                            {
+                                null => Color.Default,
+                                true => Color.Success,
+                                _ => Color.Error
+                            })"
+                     Size="Size.Small"/>
+        </MudTooltip>
     </MudAppBar>
     <MudMainContent>
         @Body
