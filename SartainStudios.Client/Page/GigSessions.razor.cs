@@ -128,4 +128,11 @@ public sealed partial class GigSessions(
             IsBusy = false;
         }
     }
+
+    private static string HourlyRate(GigSessionDto session)
+    {
+        return session.Minutes > 0
+            ? $"{GigFormat.Money(session.Profit / (session.Minutes / 60m))}/hr"
+            : "-";
+    }
 }
