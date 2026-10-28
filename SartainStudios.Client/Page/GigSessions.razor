@@ -47,6 +47,7 @@
                     <MudTh>Earnings</MudTh>
                     <MudTh>Expenses</MudTh>
                     <MudTh>Profit</MudTh>
+                    <MudTh>Hourly rate</MudTh>
                     <MudTh>Miles</MudTh>
                     @if (MileageDeductionEnabled)
                     {
@@ -70,6 +71,7 @@
                     <MudTd DataLabel="Earnings">@GigFormat.Money(context.GrossEarnings)</MudTd>
                     <MudTd DataLabel="Expenses">@GigFormat.Money(context.TotalExpenses)</MudTd>
                     <MudTd DataLabel="Profit">@GigFormat.Money(context.Profit)</MudTd>
+                    <MudTd DataLabel="Hourly rate">@HourlyRate(context)</MudTd>
                     <MudTd DataLabel="Miles">@(context.Miles?.ToString("0.#") ?? "-")</MudTd>
                     @if (MileageDeductionEnabled)
                     {
