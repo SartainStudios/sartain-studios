@@ -6,4 +6,5 @@ public sealed class ApiSettings
 {
     public const string SectionName = nameof(ConfigurationSections.Api);
     public required string BaseUrl { get; init; }
+    public required string FallbackBaseUrl { get; init; }
 }
