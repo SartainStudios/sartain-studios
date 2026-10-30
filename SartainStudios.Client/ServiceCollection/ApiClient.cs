@@ -15,31 +15,34 @@ public static class ApiClient
             if (string.IsNullOrWhiteSpace(apiSettings.BaseUrl))
                 throw new InvalidOperationException(
                     $"{ApiSettings.SectionName}:{nameof(ApiSettings.BaseUrl)} configuration value is required.");
-            var apiBaseUrl = apiSettings.BaseUrl;
-            services.AddHttpClient(BearerTokenHandler.RefreshClientName,
-                client => client.BaseAddress = new Uri(apiBaseUrl));
-            services.AddApiClient<Authentication>(apiBaseUrl);
-            services.AddApiClient<Account>(apiBaseUrl);
-            services.AddApiClient<UserAdministration>(apiBaseUrl);
-            services.AddApiClient<Organization>(apiBaseUrl);
-            services.AddApiClient<Membership>(apiBaseUrl);
-            services.AddApiClient<Project>(apiBaseUrl);
-            services.AddApiClient<Client.Service.Client>(apiBaseUrl);
-            services.AddApiClient<BillingContract>(apiBaseUrl);
-            services.AddApiClient<WorkSession>(apiBaseUrl);
-            services.AddApiClient<Invoice>(apiBaseUrl);
-            services.AddApiClient<OnboardingStatus>(apiBaseUrl);
-            services.AddApiClient<Health>(apiBaseUrl);
-            services.AddApiClient<GigSession>(apiBaseUrl);
-            services.AddApiClient<GigSource>(apiBaseUrl);
-            services.AddApiClient<GigReport>(apiBaseUrl);
-            services.AddApiClient<GigSettings>(apiBaseUrl);
+            services.AddTransient<FallbackApiHandler>(sp => new FallbackApiHandler(apiSettings));
+            services.AddHttpClient(
+                    BearerTokenHandler.RefreshClientName,
+                    client => client.BaseAddress = new Uri(apiSettings.BaseUrl))
+                .AddHttpMessageHandler<FallbackApiHandler>();
+            services.AddApiClient<Authentication>(apiSettings);
+            services.AddApiClient<Account>(apiSettings);
+            services.AddApiClient<UserAdministration>(apiSettings);
+            services.AddApiClient<Organization>(apiSettings);
+            services.AddApiClient<Membership>(apiSettings);
+            services.AddApiClient<Project>(apiSettings);
+            services.AddApiClient<Client.Service.Client>(apiSettings);
+            services.AddApiClient<BillingContract>(apiSettings);
+            services.AddApiClient<WorkSession>(apiSettings);
+            services.AddApiClient<Invoice>(apiSettings);
+            services.AddApiClient<OnboardingStatus>(apiSettings);
+            services.AddApiClient<Health>(apiSettings);
+            services.AddApiClient<GigSession>(apiSettings);
+            services.AddApiClient<GigSource>(apiSettings);
+            services.AddApiClient<GigReport>(apiSettings);
+            services.AddApiClient<GigSettings>(apiSettings);
             services.AddHttpClient<BuildInfoService>(client => client.BaseAddress = new Uri(hostBaseAddress));
         }
 
-        private void AddApiClient<TClient>(string apiBaseUrl) where TClient : class
+        private void AddApiClient<TClient>(ApiSettings apiSettings) where TClient : class
         {
-            services.AddHttpClient<TClient>(client => client.BaseAddress = new Uri(apiBaseUrl))
+            services.AddHttpClient<TClient>(client => client.BaseAddress = new Uri(apiSettings.BaseUrl))
+                .AddHttpMessageHandler<FallbackApiHandler>()
                 .AddHttpMessageHandler<BearerTokenHandler>();
         }
     }
