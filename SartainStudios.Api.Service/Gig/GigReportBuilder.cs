@@ -17,9 +17,11 @@ public static class GigReportBuilder
         var weekCount = Math.Max(weeks, 2);
         var firstWeekStart = thisWeekStart.AddDays(-7 * (weekCount - 1));
         var displayStart = thisWeekStart.AddDays(-7 * (weeks - 1));
-        var rows = sessions
+        var allRows = sessions
             .Where(session => session.EndTime is not null)
             .Select(session => ToRow(session, rate, timeZone))
+            .ToList();
+        var rows = allRows
             .Where(row => row.Date >= firstWeekStart && row.Date <= today)
             .ToList();
         var summaries = Enumerable.Range(0, weekCount)
@@ -32,11 +34,23 @@ public static class GigReportBuilder
         var displayRows = rows.Where(row => row.Date >= displayStart).ToList();
         return new Report(
             rate.MileageDeductionEnabled,
+            SummarizeAllTime(allRows),
             summaries[^1],
             summaries[^2],
             summaries.Where(summary => summary.WeekStart >= displayStart).ToList(),
             BuildDaily(displayRows, displayStart, today),
             BuildWeekdayAverages(displayRows));
+    }
+
+    private static AllTimeSummary SummarizeAllTime(IReadOnlyCollection<Row> rows)
+    {
+        var minutes = rows.Sum(row => row.Minutes);
+        var gross = rows.Sum(row => row.Gross);
+        var expenses = rows.Sum(row => row.Expenses);
+        var profit = gross - expenses;
+        return new AllTimeSummary(
+            rows.Count, minutes, gross, expenses, profit,
+            HourlyRate(gross, minutes), HourlyRate(profit, minutes));
     }
 
     public static WeekSummary Summarize(DateOnly weekStart, IReadOnlyCollection<Row> rows, GigRateContext rate)

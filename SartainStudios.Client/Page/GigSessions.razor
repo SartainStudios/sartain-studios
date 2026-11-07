@@ -24,6 +24,10 @@
         }
         @if (!IsLoading)
         {
+            @if (AllTime is not null)
+            {
+                <AllTimeSummaryCard Summary="AllTime"/>
+            }
             <GigEarningsImport Sources="Sources" OnSaved="RefreshSessionsAsync"/>
         }
         @if (IsLoading)

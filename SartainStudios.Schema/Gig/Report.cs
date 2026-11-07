@@ -27,8 +27,18 @@ public sealed record WeekdayAverage(
     decimal AverageMinutes,
     decimal? GrossHourlyRate);
 
+public sealed record AllTimeSummary(
+    int SessionCount,
+    int Minutes,
+    decimal Gross,
+    decimal Expenses,
+    decimal Profit,
+    decimal? GrossHourlyRate,
+    decimal? ProfitHourlyRate);
+
 public sealed record Report(
     bool MileageDeductionEnabled,
+    AllTimeSummary AllTime,
     WeekSummary ThisWeek,
     WeekSummary LastWeek,
     IReadOnlyList<WeekSummary> Weeks,

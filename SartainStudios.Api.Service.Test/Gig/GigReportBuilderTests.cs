@@ -76,6 +76,62 @@ public sealed class GigReportBuilderTests
         var report = GigReportBuilder.Build([running], GigRateContext.Disabled, TimeZoneInfo.Utc, Now, 2);
 
         Assert.Equal(0, report.ThisWeek.SessionCount);
+        Assert.Equal(0, report.AllTime.SessionCount);
+        Assert.Null(report.AllTime.GrossHourlyRate);
+        Assert.Null(report.AllTime.ProfitHourlyRate);
+    }
+
+    [Fact]
+    public void Build_AllTimeTotalsIncludeOlderSessionsAndUseTotalHoursForRates()
+    {
+        var sessions = new[]
+        {
+            NewSession(new DateTime(2020, 1, 1, 10, 0, 0, DateTimeKind.Utc), 1, 100m, 10m),
+            NewSession(new DateTime(2026, 8, 12, 10, 0, 0, DateTimeKind.Utc), 3, 30m, 5m),
+            NewSession(new DateTime(2026, 8, 12, 15, 0, 0, DateTimeKind.Utc), 0, 10m, 5m)
+        };
+
+        var report = GigReportBuilder.Build(sessions, GigRateContext.Disabled, TimeZoneInfo.Utc, Now, 2);
+        var longerReport = GigReportBuilder.Build(sessions, GigRateContext.Disabled, TimeZoneInfo.Utc, Now, 26);
+
+        Assert.Equal(3, report.AllTime.SessionCount);
+        Assert.Equal(240, report.AllTime.Minutes);
+        Assert.Equal(140m, report.AllTime.Gross);
+        Assert.Equal(20m, report.AllTime.Expenses);
+        Assert.Equal(120m, report.AllTime.Profit);
+        Assert.Equal(35m, report.AllTime.GrossHourlyRate);
+        Assert.Equal(30m, report.AllTime.ProfitHourlyRate);
+        Assert.Equal(report.AllTime, longerReport.AllTime);
+        Assert.Equal(40m, report.ThisWeek.Gross);
+    }
+
+    [Fact]
+    public void Build_AllTimeTotalsAreNotLimitedToRecentSessions()
+    {
+        var sessions = Enumerable.Range(0, 250)
+            .Select(index => NewSession(Now.AddDays(-index), 1, 10m, 2m));
+
+        var report = GigReportBuilder.Build(sessions, GigRateContext.Disabled, TimeZoneInfo.Utc, Now, 2);
+
+        Assert.Equal(250, report.AllTime.SessionCount);
+        Assert.Equal(15000, report.AllTime.Minutes);
+        Assert.Equal(2500m, report.AllTime.Gross);
+        Assert.Equal(500m, report.AllTime.Expenses);
+        Assert.Equal(2000m, report.AllTime.Profit);
+        Assert.Equal(10m, report.AllTime.GrossHourlyRate);
+        Assert.Equal(8m, report.AllTime.ProfitHourlyRate);
+    }
+
+    [Fact]
+    public void Build_AllTimeRatesAreUnavailableWithoutWorkedMinutes()
+    {
+        var session = NewSession(Now, 0, 20m, 30m);
+
+        var report = GigReportBuilder.Build([session], GigRateContext.Disabled, TimeZoneInfo.Utc, Now, 2);
+
+        Assert.Equal(-10m, report.AllTime.Profit);
+        Assert.Null(report.AllTime.GrossHourlyRate);
+        Assert.Null(report.AllTime.ProfitHourlyRate);
     }
 
     [Fact]
