@@ -62,6 +62,12 @@ public static class GigErrors
     public static readonly Error TakeOutOfRange = ValidationError.FromErrors(
         (TakeField, $"Take must be between {MinimumTake} and {MaximumTake}."));
 
+    public static readonly Error InvalidSessionRange = ValidationError.FromErrors(
+        ("range", "Choose a UTC time range of at most three days."));
+
+    public static readonly Error TooManySessionsInRange = ValidationError.FromErrors(
+        ("range", "More than 200 sessions overlap this period; narrow the range."));
+
     public static readonly Error WeeksOutOfRange = ValidationError.FromErrors(
         (WeeksField, $"Weeks must be between {MinimumWeeks} and {MaximumWeeks}."));
 

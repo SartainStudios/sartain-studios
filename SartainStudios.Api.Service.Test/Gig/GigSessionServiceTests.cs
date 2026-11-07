@@ -328,6 +328,38 @@ public sealed class GigSessionServiceTests
     }
 
     [Fact]
+    public async Task ListOverlappingAsync_ReturnsOnlyClosedOverlappingSessionsForTheUser()
+    {
+        var fixture = CreateFixture();
+        fixture.Harness.GigSessions.Seed(
+            new GigSession { UserId = fixture.UserId, StartTime = Now.AddDays(-2), EndTime = Now.AddHours(-1) },
+            new GigSession { UserId = fixture.UserId, StartTime = Now.AddHours(1), EndTime = Now.AddHours(2) },
+            new GigSession { UserId = fixture.UserId, StartTime = Now.AddDays(-3), EndTime = Now.AddDays(-2) },
+            new GigSession { UserId = fixture.UserId, StartTime = Now.AddHours(-1) },
+            new GigSession { UserId = ObjectId.GenerateNewId(), StartTime = Now.AddHours(-1), EndTime = Now.AddHours(1) });
+
+        var result = await fixture.Sessions.ListOverlappingAsync(Now.AddHours(-2), Now.AddHours(3), null);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value.Count);
+    }
+
+    [Fact]
+    public async Task ListOverlappingAsync_ValidatesRangeAndReportsTruncation()
+    {
+        var fixture = CreateFixture();
+        Assert.Equal(GigErrors.InvalidSessionRange,
+            (await fixture.Sessions.ListOverlappingAsync(Now, Now.AddDays(4), null)).Error);
+        Assert.Equal(GigErrors.InvalidSessionRange,
+            (await fixture.Sessions.ListOverlappingAsync(DateTime.SpecifyKind(Now, DateTimeKind.Unspecified), Now, null)).Error);
+        fixture.Harness.GigSessions.Seed(Enumerable.Range(0, 201)
+            .Select(_ => new GigSession { UserId = fixture.UserId, StartTime = Now.AddHours(-1), EndTime = Now })
+            .ToArray());
+        var result = await fixture.Sessions.ListOverlappingAsync(Now.AddHours(-2), Now.AddHours(1), null);
+        Assert.Equal(GigErrors.TooManySessionsInRange, result.Error);
+    }
+
+    [Fact]
     public async Task GetCurrentAsync_ReturnsTheRunningSessionOrNone()
     {
         var fixture = CreateFixture();

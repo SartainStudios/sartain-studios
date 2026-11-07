@@ -67,6 +67,31 @@ public sealed class GigSessionService(
         return await ToSessionAsync(loaded.Value, userTimeZoneId, cancellationToken);
     }
 
+    public async Task<Result<IReadOnlyList<GigSessionDto>>> ListOverlappingAsync(
+        DateTime fromUtc, DateTime toUtc, string? userTimeZoneId, CancellationToken cancellationToken = default)
+    {
+        var userId = currentTenant.UserId;
+        if (userId == ObjectId.Empty)
+            return TenantErrors.NotResolved;
+        if (fromUtc.Kind != DateTimeKind.Utc || toUtc.Kind != DateTimeKind.Utc ||
+            toUtc <= fromUtc || toUtc - fromUtc > TimeSpan.FromDays(3))
+            return GigErrors.InvalidSessionRange;
+        var sessions = await database.GigSessions
+            .Find(session => session.UserId == userId && !session.IsOpen &&
+                             session.StartTime < toUtc && session.EndTime >= fromUtc)
+            .SortByDescending(session => session.StartTime)
+            .Limit(GigErrors.MaximumTake + 1)
+            .ToListAsync(cancellationToken);
+        if (sessions.Count > GigErrors.MaximumTake)
+            return GigErrors.TooManySessionsInRange;
+        var rate = await settingsService.GetRateContextAsync(userId, cancellationToken);
+        var timeZone = GigCalculator.ResolveTimeZone(userTimeZoneId);
+        var now = Now;
+        IReadOnlyList<GigSessionDto> result = sessions
+            .Select(session => GigCalculator.ToSession(session, rate, timeZone, now)).ToList();
+        return Result.Success(result);
+    }
+
     public async Task<Result<GigSessionState>> StartAsync(
         StartGigSessionRequest request,
         string? userTimeZoneId,

@@ -22,6 +22,10 @@
         {
             <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
         }
+        @if (!IsLoading)
+        {
+            <GigEarningsImport Sources="Sources" OnSaved="RefreshSessionsAsync"/>
+        }
         @if (IsLoading)
         {
             <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="5" Columns="8"/>

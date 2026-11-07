@@ -17,6 +17,7 @@
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\SartainStudios.Api.Service\SartainStudios.Api.Service.csproj"/>
+        <ProjectReference Include="..\SartainStudios.Client.Service\SartainStudios.Client.Service.csproj"/>
     </ItemGroup>
     <ItemGroup>
         <Using Include="Xunit"/>
