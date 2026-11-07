@@ -1,0 +1,43 @@
+@using SartainStudios.Schema.Gig
+
+<MudPaper Class="pa-4" Elevation="1">
+    <MudStack Spacing="2">
+        <MudText Typo="Typo.h6">All-time totals</MudText>
+        <MudText Typo="Typo.caption" Color="Color.Secondary">
+            Completed sessions only. Hourly rates use total earnings or profit divided by total hours.
+        </MudText>
+        <MudGrid>
+            <MudItem xs="6" sm="4" md="2">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Hours worked</MudText>
+                <MudText Typo="Typo.h6">@GigFormat.Hours(Summary.Minutes)</MudText>
+            </MudItem>
+            <MudItem xs="6" sm="4" md="2">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Earnings</MudText>
+                <MudText Typo="Typo.h6">@GigFormat.Money(Summary.Gross)</MudText>
+            </MudItem>
+            <MudItem xs="6" sm="4" md="2">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Expenses</MudText>
+                <MudText Typo="Typo.h6">@GigFormat.Money(Summary.Expenses)</MudText>
+            </MudItem>
+            <MudItem xs="6" sm="4" md="2">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Profit</MudText>
+                <MudText Typo="Typo.h6">@GigFormat.Money(Summary.Profit)</MudText>
+            </MudItem>
+            <MudItem xs="6" sm="4" md="2">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Earnings per hour</MudText>
+                <MudText Typo="Typo.h6">@GigFormat.Rate(Summary.GrossHourlyRate)</MudText>
+            </MudItem>
+            <MudItem xs="6" sm="4" md="2">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Profit per hour</MudText>
+                <MudText Typo="Typo.h6">@GigFormat.Rate(Summary.ProfitHourlyRate)</MudText>
+            </MudItem>
+        </MudGrid>
+        <MudText Typo="Typo.caption" Color="Color.Secondary">
+            Profit is earnings minus expenses, before any mileage deduction.
+        </MudText>
+    </MudStack>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public AllTimeSummary Summary { get; set; } = default!;
+}
