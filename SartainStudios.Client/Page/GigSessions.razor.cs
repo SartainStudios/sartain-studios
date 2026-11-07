@@ -9,9 +9,11 @@ public sealed partial class GigSessions(
     GigSession gigSession,
     GigSource gigSource,
     GigSettings gigSettings,
+    GigReport gigReport,
     ISnackbar snackbar)
 {
     private List<GigSessionDto> Items { get; set; } = [];
+    private AllTimeSummary? AllTime { get; set; }
     private IReadOnlyList<Source> Sources { get; set; } = [];
     private IReadOnlyList<Category> Categories { get; set; } = [];
     private bool MileageDeductionEnabled { get; set; }
@@ -35,10 +37,12 @@ public sealed partial class GigSessions(
         ErrorMessage = null;
         try
         {
+            var summary = RefreshSummaryAsync();
             var sessions = gigSession.ListAsync(200);
             var sources = gigSource.ListSourcesAsync();
             var categories = gigSource.ListCategoriesAsync();
             var settings = gigSettings.GetAsync();
+            await summary;
             Items = (await sessions).ToList();
             Sources = await sources;
             Categories = await categories;
@@ -65,13 +69,31 @@ public sealed partial class GigSessions(
 
     private async Task RefreshSessionsAsync()
     {
+        ErrorMessage = null;
         try
         {
-            Items = (await gigSession.ListAsync(200)).ToList();
+            var summary = RefreshSummaryAsync();
+            var sessions = gigSession.ListAsync(200);
+            await summary;
+            Items = (await sessions).ToList();
         }
         catch (Exception ex)
         {
             ErrorMessage = $"Could not refresh sessions: {ex.Message}";
+            snackbar.Add(ErrorMessage, Severity.Error);
+        }
+    }
+
+    private async Task RefreshSummaryAsync()
+    {
+        try
+        {
+            AllTime = (await gigReport.GetAsync()).AllTime;
+        }
+        catch (Exception ex)
+        {
+            AllTime = null;
+            ErrorMessage = $"Could not refresh all-time totals: {ex.Message}";
             snackbar.Add(ErrorMessage, Severity.Error);
         }
     }
