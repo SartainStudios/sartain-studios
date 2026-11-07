@@ -50,6 +50,16 @@ public sealed class GigSession(HttpClient httpClient)
                ?? throw new InvalidOperationException("Empty session response.");
     }
 
+    public async Task<IReadOnlyList<GigSessionDto>> ListOverlappingAsync(DateTime fromUtc, DateTime toUtc)
+    {
+        var from = Uri.EscapeDataString(fromUtc.ToString("O"));
+        var to = Uri.EscapeDataString(toUtc.ToString("O"));
+        var response = await httpClient.GetAsync(UserTimeZone.Append($"{BaseRoute}/overlapping?fromUtc={from}&toUtc={to}"));
+        await Response.EnsureSuccessAsync(response);
+        return await response.Content.ReadFromJsonAsync<List<GigSessionDto>>()
+               ?? throw new InvalidOperationException("Empty session response.");
+    }
+
     public async Task<GigSessionDto> CreateAsync(GigSessionRequest request)
     {
         var response = await httpClient.PostAsJsonAsync(UserTimeZone.Append(BaseRoute), request);

@@ -3,11 +3,13 @@ namespace SartainStudios.Schema.Gig;
 public static class GigDefaults
 {
     public const string FallbackColor = "#757575";
+    public const string UberEatsSourceName = "Uber Eats";
+    public const string DoorDashSourceName = "DoorDash";
 
     public static readonly IReadOnlyList<(string Name, string Color)> Sources =
     [
-        ("Uber Eats", "#06C167"),
-        ("DoorDash", "#EB1700"),
+        (UberEatsSourceName, "#06C167"),
+        (DoorDashSourceName, "#EB1700"),
         ("Grubhub", "#F63440"),
         ("Instacart", "#43B02A"),
         ("Uber", "#276EF1"),

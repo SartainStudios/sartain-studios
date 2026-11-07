@@ -1,0 +1,135 @@
+@using SartainStudios.Client.Service
+
+<MudPaper Class="pa-4" Elevation="1">
+    <MudStack Spacing="3">
+        <MudText Typo="Typo.h6">Import earnings from screenshots</MudText>
+        <MudText Typo="Typo.body2">Images are read on this device. Choose screenshots from the same date and app; review every amount and assignment before saving.</MudText>
+        <MudAlert Severity="Severity.Warning" Dense="true">
+            OCR can miss or misread entries. Re-uploaded or overlapping screenshots can duplicate earnings.
+            Times are interpreted in this device's time zone.
+        </MudAlert>
+        @if (!string.IsNullOrEmpty(Error))
+        {
+            <MudAlert Severity="Severity.Error" Dense="true">@Error</MudAlert>
+        }
+        @if (!string.IsNullOrEmpty(Notice))
+        {
+            <MudAlert Severity="Severity.Info" Dense="true">@Notice</MudAlert>
+        }
+        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
+            <MudSelect T="string" Label="Screenshot app" @bind-Value="Platform" Disabled="@(Busy || Rows.Count > 0)" Style="min-width:170px">
+                <MudSelectItem T="string" Value="@EarningsScreenshotSource.Uber">Uber Eats</MudSelectItem>
+                <MudSelectItem T="string" Value="@EarningsScreenshotSource.DoorDash">DoorDash</MudSelectItem>
+            </MudSelect>
+            <MudDatePicker Label="Screenshot date" @bind-Date="Date" Disabled="@(Busy || Rows.Count > 0)" Style="min-width:170px"/>
+        </MudStack>
+        @if (SelectedSource is null)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true">
+                The matching built-in earnings source is hidden or unavailable. Unhide it under Sources and categories before importing.
+            </MudAlert>
+        }
+        <MudText Typo="Typo.body2">For DoorDash, select the date the dash started. Overnight dashes are supported.</MudText>
+        <input @ref="FileInput" type="file" accept="image/*" multiple disabled="@(Busy || Rows.Count > 0)"/>
+        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ReadAsync" Disabled="@(Busy || Rows.Count > 0)">Read screenshots</MudButton>
+            <MudButton Variant="Variant.Outlined" OnClick="Reset" Disabled="@Busy">Start over</MudButton>
+        </MudStack>
+        @if (Busy)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary"/>
+            <MudText>Working on this device. Long screenshots may take a few minutes.</MudText>
+        }
+        @if (ReadResults.Count > 0)
+        {
+            <details>
+                <summary>Show screenshots for comparison</summary>
+                @foreach (var result in ReadResults)
+                {
+                    <MudText Typo="Typo.subtitle2">@result.Name</MudText>
+                    <div style="max-height:30rem; overflow:auto">
+                        <img src="@result.Url" alt="@result.Name" style="max-width:100%; height:auto"/>
+                    </div>
+                }
+            </details>
+            <details>
+                <summary>Show recognized text</summary>
+                @foreach (var result in ReadResults)
+                {
+                    <MudText Typo="Typo.subtitle2">@result.Name</MudText>
+                    <pre style="white-space:pre-wrap; max-height:18rem; overflow:auto">@result.Text</pre>
+                }
+            </details>
+        }
+        @if (Rows.Count > 0 && !Reviewing)
+        {
+            <MudAlert Severity="Severity.Info" Dense="true">
+                Compare every row with the screenshots. Add missing rows and remove duplicates.
+                Uber amounts include tips; DoorDash rows are whole dash totals, not individual offers.
+                A dash crossing multiple sessions cannot be split from a shift total alone. Manual
+                session choices can override the suggested times; verify them carefully.
+            </MudAlert>
+            @foreach (var row in Rows)
+            {
+                <MudPaper Class="pa-3" Outlined="true" @key="row">
+                    <MudStack Spacing="2">
+                        <MudText Typo="Typo.subtitle2">@row.FileName</MudText>
+                        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
+                            <MudNumericField T="decimal?" Label="Amount" @bind-Value="row.Amount" Min="0m" HideSpinButtons="true" Style="min-width:110px"/>
+                            <MudTimePicker Label="@(Platform == EarningsScreenshotSource.Uber ? "Activity time" : "Dash start")" Time="row.Start" TimeChanged="value => ChangeStart(row, value)" AmPm="true" Style="min-width:150px"/>
+                            @if (Platform == EarningsScreenshotSource.DoorDash)
+                            {
+                                <MudTimePicker Label="Dash end" Time="row.End" TimeChanged="value => ChangeEnd(row, value)" AmPm="true" Style="min-width:150px"/>
+                            }
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="() => Rows.Remove(row)" title="Remove row"/>
+                        </MudStack>
+                        <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="() => Suggest(row)">Suggest session from times</MudButton>
+                        <MudSelect T="string" Label="Your session (leave unassigned to exclude)" @bind-Value="row.SessionId">
+                            <MudSelectItem T="string" Value="@string.Empty">Unassigned</MudSelectItem>
+                            @foreach (var session in ClosedSessions)
+                            {
+                                <MudSelectItem T="string" Value="@session.Id">@SessionLabel(session)</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudStack>
+                </MudPaper>
+            }
+            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
+                <MudButton Variant="Variant.Outlined" OnClick="AddRow">Add missing row</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Prepare">Review session totals</MudButton>
+            </MudStack>
+        }
+        @if (Reviewing)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true">
+                @Rows.Count(x => string.IsNullOrEmpty(x.SessionId)) row(s) are unassigned and will not be saved.
+                Choose an action for each session. Replace removes all existing earnings and notes for this source.
+                The importer cannot detect previous imports.
+            </MudAlert>
+            @foreach (var proposal in Proposals)
+            {
+                <MudPaper Class="pa-3" Outlined="true" @key="proposal.Session.Id">
+                    <MudText Typo="Typo.subtitle2">@SessionLabel(proposal.Session)</MudText>
+                    <MudText>Screenshot total: @GigFormat.Money(proposal.Amount) (@proposal.Count row(s)).
+                        Existing source earnings: @GigFormat.Money(proposal.Existing).</MudText>
+                    @if (proposal.Saved)
+                    {
+                        <MudText Color="Color.Success">Saved</MudText>
+                    }
+                    else
+                    {
+                        <MudSelect T="string" Label="Action" @bind-Value="proposal.Action">
+                            <MudSelectItem T="string" Value="@("Skip")">Skip</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("Add")">Add to existing earnings</MudSelectItem>
+                            <MudSelectItem T="string" Value="@("Replace")">Replace existing source earnings</MudSelectItem>
+                        </MudSelect>
+                    }
+                </MudPaper>
+            }
+            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
+                <MudButton Variant="Variant.Outlined" OnClick="BackToRows" Disabled="@Busy">Back to rows</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="@Busy">Save selected actions</MudButton>
+            </MudStack>
+        }
+    </MudStack>
+</MudPaper>

@@ -21,4 +21,8 @@
         <ProjectReference Include="..\SartainStudios.Client.Service\SartainStudios.Client.Service.csproj"/>
         <ProjectReference Include="..\SartainStudios.Schema\SartainStudios.Schema.csproj"/>
     </ItemGroup>
+    <Target Name="CheckOcrAssets" BeforeTargets="PrepareForBuild">
+        <Error Condition="!Exists('wwwroot\ocr\worker.min.js') Or !Exists('wwwroot\ocr\eng.traineddata.gz') Or !Exists('wwwroot\ocr\tesseract-core-lstm.wasm.js') Or !Exists('wwwroot\ocr\tesseract-core-simd-lstm.wasm.js') Or !Exists('wwwroot\ocr\tesseract-core-relaxedsimd-lstm.wasm.js') Or !Exists('wwwroot\ocr\tesseract.min.js')"
+               Text="Browser OCR assets are missing. Run npm ci in SartainStudios.Client before building."/>
+    </Target>
 </Project>

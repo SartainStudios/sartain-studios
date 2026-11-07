@@ -31,6 +31,19 @@ public sealed class GigSessionController(GigSessionService gigSessionService) : 
         return gigSessionService.GetCurrentAsync(userTimeZoneId, cancellationToken).ToActionResultAsync(this);
     }
 
+    [HttpGet("overlapping")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public Task<ActionResult<IReadOnlyList<GigSessionDto>>> ListOverlapping(
+        [FromQuery] DateTime fromUtc,
+        [FromQuery] DateTime toUtc,
+        [FromQuery] string? userTimeZoneId = null,
+        CancellationToken cancellationToken = default)
+    {
+        return gigSessionService.ListOverlappingAsync(fromUtc, toUtc, userTimeZoneId, cancellationToken)
+            .ToActionResultAsync(this);
+    }
+
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

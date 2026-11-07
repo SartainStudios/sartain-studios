@@ -63,6 +63,19 @@ public sealed partial class GigSessions(
         DialogVisible = true;
     }
 
+    private async Task RefreshSessionsAsync()
+    {
+        try
+        {
+            Items = (await gigSession.ListAsync(200)).ToList();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Could not refresh sessions: {ex.Message}";
+            snackbar.Add(ErrorMessage, Severity.Error);
+        }
+    }
+
     private void OpenEdit(GigSessionDto session)
     {
         Editing = session;
