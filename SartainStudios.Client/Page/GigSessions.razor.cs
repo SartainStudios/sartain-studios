@@ -21,6 +21,7 @@ public sealed partial class GigSessions(
     private GigSessionDto? Deleting { get; set; }
     private GigSessionDialogMode DialogMode { get; set; } = GigSessionDialogMode.Edit;
     private bool DialogVisible { get; set; }
+    private bool ImportVisible { get; set; }
     private bool DeleteVisible { get; set; }
     private string? ErrorMessage { get; set; }
     private bool IsLoading { get; set; } = true;
@@ -66,6 +67,8 @@ public sealed partial class GigSessions(
         DialogMode = GigSessionDialogMode.Create;
         DialogVisible = true;
     }
+
+    private void OpenImport() => ImportVisible = true;
 
     private async Task RefreshSessionsAsync()
     {
