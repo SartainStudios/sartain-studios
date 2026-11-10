@@ -9,16 +9,22 @@
     <MudStack Spacing="4">
         @if (IsEditView)
         {
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Wrap="Wrap.Wrap">
                 <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="@Metadata.Invoicing.SessionsRoute"
                            StartIcon="@Icons.Material.Filled.ArrowBack">
                     Sessions
                 </MudButton>
                 <MudSpacer/>
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="@Metadata.Invoicing.DashboardRoute"
-                           StartIcon="@Metadata.Invoicing.DashboardInfo.Icon">
-                    Dashboard
-                </MudButton>
+                @if (!IsLoading && Session is { CanEdit: true })
+                {
+                    <MudButton Variant="Variant.Text" Href="@Metadata.Invoicing.SessionsRoute" Disabled="IsBusy">
+                        Cancel
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync"
+                               Disabled="IsSaveDisabled">
+                        @(IsBusy ? "Saving..." : "Save")
+                    </MudButton>
+                }
             </MudStack>
         }
         else
@@ -68,16 +74,6 @@
                             <MudStack Row="true" Spacing="2">
                                 <MudDatePicker Label="End date" @bind-Date="EndDate" Disabled="IsBusy"/>
                                 <MudTimePicker Label="End time" @bind-Time="EndTime" Disabled="IsBusy"/>
-                            </MudStack>
-                            <MudStack Row="true" Justify="Justify.FlexEnd" Spacing="2">
-                                <MudButton Variant="Variant.Text" Href="@Metadata.Invoicing.SessionsRoute"
-                                           Disabled="IsBusy">
-                                    Cancel
-                                </MudButton>
-                                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync"
-                                           Disabled="IsSaveDisabled">
-                                    @(IsBusy ? "Saving..." : "Save")
-                                </MudButton>
                             </MudStack>
                         }
                     </MudStack>

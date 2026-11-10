@@ -276,18 +276,20 @@
 
             @if (Onboarding is null || Onboarding.HasLoggedSession)
             {
-                <MudStack Row="true" AlignItems="AlignItems.Center">
-                    <MudText Typo="Typo.h5">Session history</MudText>
-                    <MudSpacer/>
-                    <MudButton Variant="Variant.Text" Color="Color.Primary"
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween"
+                          Wrap="Wrap.Wrap" Spacing="2">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.h5">Session history</MudText>
+                        @if (!IsLoadingSessions)
+                        {
+                            <MudText Color="Color.Secondary">
+                                Latest @Sessions.Count session@(Sessions.Count == 1 ? string.Empty : "s")</MudText>
+                        }
+                    </MudStack>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
                                Href="@Metadata.Invoicing.Sessions.Route"
-                               StartIcon="@Icons.Material.Filled.AccessTime" Class="mr-2">All sessions
+                               StartIcon="@Icons.Material.Filled.AccessTime">All sessions
                     </MudButton>
-                    @if (!IsLoadingSessions)
-                    {
-                        <MudText Color="Color.Secondary">
-                            Latest @Sessions.Count session@(Sessions.Count == 1 ? string.Empty : "s")</MudText>
-                    }
                 </MudStack>
                 @if (IsLoadingSessions)
                 {
