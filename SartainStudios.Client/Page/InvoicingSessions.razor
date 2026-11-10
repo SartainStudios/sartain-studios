@@ -28,11 +28,6 @@
                     <MudText Typo="Typo.h4">Sessions</MudText>
                     <MudText Color="Color.Secondary">Review, edit, and manage your recorded work sessions.</MudText>
                 </MudStack>
-                <MudSpacer/>
-                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="@Metadata.Invoicing.DashboardRoute"
-                           StartIcon="@Metadata.Invoicing.DashboardInfo.Icon">
-                    Dashboard
-                </MudButton>
             </MudStack>
         }
         @if (!string.IsNullOrWhiteSpace(ErrorMessage))

@@ -12,11 +12,6 @@
                 <MudText Typo="Typo.h4">Sessions</MudText>
                 <MudText Color="Color.Secondary">Newest first. Edit or delete any session at any time.</MudText>
             </MudStack>
-            <MudSpacer/>
-            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="@Metadata.GigEarnings.CurrentSessionRoute"
-                       StartIcon="@Metadata.GigEarnings.CurrentSession.Icon">
-                Current Session
-            </MudButton>
         </MudStack>
         @if (!string.IsNullOrWhiteSpace(ErrorMessage))
         {

@@ -1,0 +1,102 @@
+@using SartainStudios.Schema.Invoice
+@namespace SartainStudios.Client.Component
+<MudDialog Visible="@Visible" VisibleChanged="OnVisibleChangedAsync" Options="DialogOptions">
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Receipt"/>
+            <MudText Typo="Typo.h6">New invoice</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="4">
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@ErrorMessage</MudAlert>
+            }
+            @if (Contracts is null)
+            {
+                <LoadingSkeleton Variant="LoadingSkeletonVariant.Form" Rows="2"/>
+            }
+            else
+            {
+                @if (Contracts.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true">No active billing contracts found.</MudAlert>
+                }
+                <MudText Typo="Typo.h6">Step 1 - Select a billing contract</MudText>
+                <MudSelect T="string" Label="Billing contract" Value="@SelectedContractId"
+                           ValueChanged="OnContractChanged" Required="true" Disabled="IsBusy"
+                           HelperText="Only active contracts are shown.">
+                    @foreach (var contract in Contracts)
+                    {
+                        <MudSelectItem T="string" Value="@contract.Id">
+                            @contract.ProjectName - @contract.ServiceProvided (@contract.InvoicePrefix)
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" OnClick="LoadSessionsAsync"
+                           Disabled="IsBusy || string.IsNullOrWhiteSpace(SelectedContractId) || IsLoadingSessions">
+                    @(IsLoadingSessions ? "Loading..." : "Load sessions")
+                </MudButton>
+                @if (IsLoadingSessions)
+                {
+                    <LoadingSkeleton Variant="LoadingSkeletonVariant.Table" Rows="4" Columns="5"/>
+                }
+                else if (Sessions is not null)
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.h6">Step 2 - Select sessions to include</MudText>
+                        <MudSpacer/>
+                        <MudText Color="Color.Secondary">@SelectedSessionIds.Count of @Sessions.Count selected</MudText>
+                    </MudStack>
+                    @if (Sessions.Count == 0)
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">No unbilled sessions found for this contract.</MudAlert>
+                    }
+                    else
+                    {
+                        <MudStack Row="true" Spacing="2">
+                            <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="SelectAll" Disabled="IsBusy">Select all</MudButton>
+                            <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="ClearSelection" Disabled="IsBusy">Clear</MudButton>
+                        </MudStack>
+                        <MudTable T="SelectableSession" Items="Sessions" Dense="true" Hover="true"
+                                  FixedHeader="true" Height="300px">
+                            <HeaderContent>
+                                <MudTh></MudTh>
+                                <MudTh>Started</MudTh>
+                                <MudTh>Ended</MudTh>
+                                <MudTh>Duration</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>
+                                    <MudCheckBox T="bool" Value="SelectedSessionIds.Contains(context.SessionId)"
+                                                 ValueChanged="v => ToggleSession(context.SessionId, v)"
+                                                 Size="Size.Small" Disabled="IsBusy"/>
+                                </MudTd>
+                                <MudTd DataLabel="Started">@context.StartTime.ToLocalTime().ToString("g")</MudTd>
+                                <MudTd DataLabel="Ended">@context.EndTime.ToLocalTime().ToString("g")</MudTd>
+                                <MudTd DataLabel="Duration">@FormatDuration(context.MinutesWorked)</MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                        <MudPaper Outlined="true" Class="pa-3">
+                            <MudStack Row="true" Justify="Justify.FlexEnd" Wrap="Wrap.Wrap" Spacing="4">
+                                <MudText Typo="Typo.body2"><strong>Selected:</strong> @FormatDuration(SelectedTotalMinutes)</MudText>
+                                <MudText Typo="Typo.body2"><strong>Estimated total:</strong> @EstimatedTotal.ToString("C")</MudText>
+                            </MudStack>
+                        </MudPaper>
+                        <MudText Typo="Typo.h6">Step 3 - Set due date</MudText>
+                        <MudDatePicker Label="Due date" @bind-Date="DueDate" Required="true" Disabled="IsBusy"
+                                       HelperText="The date by which payment is expected." MinDate="DateTime.Today"/>
+                    }
+                }
+            }
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="CloseAsync" Disabled="IsBusy">Cancel</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateAsync"
+                   Disabled="IsBusy || IsLoadingSessions || SelectedSessionIds.Count == 0 || DueDate is null">
+            @(IsBusy ? "Generating..." : "Generate invoice")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
