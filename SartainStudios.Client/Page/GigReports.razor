@@ -15,10 +15,12 @@
             <MudSpacer/>
             <MudSelect T="int" Label="Range" Value="Weeks" ValueChanged="OnWeeksChangedAsync" Style="max-width: 180px;"
                        Disabled="IsLoading">
+                <MudSelectItem T="int" Value="2">Last 2 weeks</MudSelectItem>
                 <MudSelectItem T="int" Value="4">Last 4 weeks</MudSelectItem>
                 <MudSelectItem T="int" Value="8">Last 8 weeks</MudSelectItem>
                 <MudSelectItem T="int" Value="12">Last 12 weeks</MudSelectItem>
                 <MudSelectItem T="int" Value="26">Last 26 weeks</MudSelectItem>
+                <MudSelectItem T="int" Value="@GigReportRange.AllTime">All time</MudSelectItem>
             </MudSelect>
         </MudStack>
         @if (!string.IsNullOrWhiteSpace(ErrorMessage))
@@ -50,7 +52,7 @@
             <MudGrid>
                 <MudItem xs="12" lg="6">
                     <MudPaper Class="pa-4" Elevation="1">
-                        <MudText Typo="Typo.subtitle1">Daily earnings (last 14 days)</MudText>
+                        <MudText Typo="Typo.subtitle1">Daily earnings (up to 14 days in range)</MudText>
                         <MudChart ChartType="ChartType.Bar" ChartSeries="DailySeries" ChartLabels="DailyLabels"
                                   Width="100%" Height="300px"/>
                     </MudPaper>

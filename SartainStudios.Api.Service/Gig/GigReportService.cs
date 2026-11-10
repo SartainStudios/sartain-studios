@@ -21,8 +21,8 @@ public sealed class GigReportService(
         var userId = currentTenant.UserId;
         if (userId == ObjectId.Empty)
             return TenantErrors.NotResolved;
-        if (weeks is < GigErrors.MinimumWeeks or > GigErrors.MaximumWeeks)
-            return GigErrors.WeeksOutOfRange;
+        if (weeks != GigReportRange.AllTime && (weeks is < GigErrors.MinimumWeeks or > GigErrors.MaximumWeeks))
+            return GigErrors.ReportWeeksOutOfRange;
         var timeZone = GigCalculator.ResolveTimeZone(userTimeZoneId);
         var now = timeProvider.GetUtcNow().UtcDateTime;
         var sessions = await database.GigSessions

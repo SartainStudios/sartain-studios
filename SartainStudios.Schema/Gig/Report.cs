@@ -1,5 +1,10 @@
 namespace SartainStudios.Schema.Gig;
 
+public static class GigReportRange
+{
+    public const int AllTime = 0;
+}
+
 public sealed record WeekSummary(
     DateOnly WeekStart,
     int SessionCount,

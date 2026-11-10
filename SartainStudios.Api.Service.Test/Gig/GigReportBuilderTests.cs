@@ -64,6 +64,64 @@ public sealed class GigReportBuilderTests
         Assert.Equal(DayOfWeek.Monday, report.WeekdayAverages[0].Day);
     }
 
+    [Theory]
+    [InlineData(1, 1, 3, 60)]
+    [InlineData(2, 2, 10, 100)]
+    public void Build_ShortRangeFiltersBreakdownButKeepsLastWeekSummary(
+        int weeks, int expectedWeeks, int expectedDays, int expectedGross)
+    {
+        var sessions = new[]
+        {
+            NewSession(new DateTime(2026, 8, 5, 10, 0, 0, DateTimeKind.Utc), 1, 40m),
+            NewSession(new DateTime(2026, 8, 12, 10, 0, 0, DateTimeKind.Utc), 1, 60m)
+        };
+
+        var report = GigReportBuilder.Build(sessions, GigRateContext.Disabled, TimeZoneInfo.Utc, Now, weeks);
+
+        Assert.Equal(expectedWeeks, report.Weeks.Count);
+        Assert.Equal(expectedDays, report.Daily.Count);
+        Assert.Equal(expectedGross, report.Weeks.Sum(week => week.Gross));
+        Assert.Equal(expectedGross, report.Daily.Sum(day => day.Gross));
+        Assert.Equal(40m, report.LastWeek.Gross);
+        Assert.Equal(60m, report.ThisWeek.Gross);
+        Assert.Equal(expectedGross / weeks, report.WeekdayAverages.Single(day => day.Day == DayOfWeek.Wednesday).AverageGross);
+    }
+
+    [Fact]
+    public void Build_AllTimeRangeIncludesOldSessionsAndFillsMissingWeeks()
+    {
+        var sessions = new[]
+        {
+            NewSession(new DateTime(2020, 1, 1, 10, 0, 0, DateTimeKind.Utc), 1, 40m),
+            NewSession(new DateTime(2026, 8, 12, 10, 0, 0, DateTimeKind.Utc), 1, 60m)
+        };
+
+        var report = GigReportBuilder.Build(sessions, GigRateContext.Disabled, TimeZoneInfo.Utc, Now, GigReportRange.AllTime);
+
+        Assert.Equal(new DateOnly(2019, 12, 30), report.Weeks[0].WeekStart);
+        Assert.True(report.Weeks.Count > GigErrors.MaximumWeeks);
+        Assert.Equal(40m, report.Weeks[0].Gross);
+        Assert.Equal(0m, report.Weeks[1].Gross);
+        Assert.Equal(100m, report.Weeks.Sum(week => week.Gross));
+        Assert.Equal(new DateOnly(2019, 12, 30), report.Daily[0].Date);
+        Assert.Equal(100m, report.Daily.Sum(day => day.Gross));
+        Assert.Equal(50m, report.WeekdayAverages.Single(day => day.Day == DayOfWeek.Wednesday).AverageGross);
+    }
+
+    [Fact]
+    public void Build_AllTimeRangeWithoutPastSessionsStartsThisWeek()
+    {
+        var futureSession = NewSession(Now.AddDays(10), 1, 20m);
+
+        var report = GigReportBuilder.Build([futureSession], GigRateContext.Disabled, TimeZoneInfo.Utc, Now, GigReportRange.AllTime);
+
+        Assert.Single(report.Weeks);
+        Assert.Equal(new DateOnly(2026, 8, 10), report.Weeks[0].WeekStart);
+        Assert.Equal(3, report.Daily.Count);
+        Assert.Equal(0m, report.Weeks[0].Gross);
+        Assert.Equal(new DateOnly(2026, 8, 3), report.LastWeek.WeekStart);
+    }
+
     [Fact]
     public void Build_IgnoresRunningSessions()
     {
