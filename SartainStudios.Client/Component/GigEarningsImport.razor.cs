@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using MudBlazor;
 using SartainStudios.Client.Service;
 using SartainStudios.Schema.Gig;
 
@@ -7,12 +8,23 @@ namespace SartainStudios.Client.Component;
 
 public sealed partial class GigEarningsImport : IAsyncDisposable
 {
+    private static readonly DialogOptions DialogOptions = new()
+    {
+        MaxWidth = MaxWidth.Medium,
+        FullWidth = true,
+        BackdropClick = false,
+        CloseOnEscapeKey = false
+    };
+
     [Inject] private IJSRuntime Js { get; set; } = null!;
     [Inject] private GigSession GigSession { get; set; } = null!;
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
     [Parameter] public IReadOnlyList<Source> Sources { get; set; } = [];
     [Parameter] public EventCallback OnSaved { get; set; }
 
     private ElementReference FileInput;
+    private int FileInputKey;
     private IJSObjectReference? _module;
     private string Platform { get; set; } = EarningsScreenshotSource.Uber;
     private string SourceId { get; set; } = string.Empty;
@@ -27,6 +39,22 @@ public sealed partial class GigEarningsImport : IAsyncDisposable
     private List<Proposal> Proposals { get; set; } = [];
     private IReadOnlyList<GigSessionDto> Sessions { get; set; } = [];
     private IEnumerable<GigSessionDto> ClosedSessions => Sessions.Where(x => !x.IsOpen && x.EndTime.HasValue);
+
+    private async Task OnVisibleChangedAsync(bool visible)
+    {
+        if (Busy)
+            return;
+
+        if (!visible)
+        {
+            await Reset();
+            Platform = EarningsScreenshotSource.Uber;
+            Date = null;
+        }
+        await VisibleChanged.InvokeAsync(visible);
+    }
+
+    private Task CloseAsync() => OnVisibleChangedAsync(false);
 
     private async Task ReadAsync()
     {
@@ -199,6 +227,7 @@ public sealed partial class GigEarningsImport : IAsyncDisposable
     private async Task Reset()
     {
         await ReleaseScreenshotsAsync();
+        FileInputKey++;
         Rows = [];
         Proposals = [];
         ReadResults = [];

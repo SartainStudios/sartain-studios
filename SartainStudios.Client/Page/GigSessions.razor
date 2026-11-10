@@ -23,7 +23,6 @@
             {
                 <AllTimeSummaryCard Summary="AllTime"/>
             }
-            <GigEarningsImport Sources="Sources" OnSaved="RefreshSessionsAsync"/>
         }
         @if (IsLoading)
         {
@@ -94,6 +93,8 @@
     </MudStack>
 </MudContainer>
 
+<GigEarningsImport @bind-Visible="ImportVisible" Sources="Sources" OnSaved="RefreshSessionsAsync"/>
+
 <GigSessionDialog @bind-Visible="DialogVisible"
                   Mode="DialogMode"
                   Session="Editing"
@@ -112,6 +113,16 @@
                IsBusy="IsBusy"
                OnConfirm="DeleteAsync"/>
 
-<MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreate"
-        Disabled="IsBusy" title="New session"
-        Style="position:fixed; bottom:24px; right:24px; z-index:1000;"/>
+<div style="position:fixed; bottom:24px; right:24px; z-index:1000;">
+    <MudMenu AnchorOrigin="Origin.TopRight" TransformOrigin="Origin.BottomRight">
+        <ActivatorContent>
+            <MudFab Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                    OnClick="@(e => context.ToggleAsync(e))" Disabled="@(IsBusy || IsLoading)"
+                    title="Add session or import earnings" aria-label="Add session or import earnings"/>
+        </ActivatorContent>
+        <ChildContent>
+            <MudMenuItem Icon="@Icons.Material.Filled.Add" OnClick="OpenCreate">Add session</MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.PhotoLibrary" OnClick="OpenImport">Import earnings using screenshots</MudMenuItem>
+        </ChildContent>
+    </MudMenu>
+</div>

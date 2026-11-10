@@ -1,44 +1,45 @@
 @using SartainStudios.Client.Service
 
-<MudPaper Class="pa-4" Elevation="1">
-    <MudStack Spacing="3">
-        <MudText Typo="Typo.h6">Import earnings from screenshots</MudText>
-        <MudText Typo="Typo.body2">Images are read on this device. Choose screenshots from the same date and app; review every amount and assignment before saving.</MudText>
-        <MudAlert Severity="Severity.Warning" Dense="true">
-            OCR can miss or misread entries. Re-uploaded or overlapping screenshots can duplicate earnings.
-            Times are interpreted in this device's time zone.
-        </MudAlert>
+<MudDialog Visible="@Visible" VisibleChanged="OnVisibleChangedAsync" Options="DialogOptions"
+           ContentClass="d-flex flex-column overflow-hidden">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Import earnings using screenshots</MudText>
+    </TitleContent>
+    <DialogContent>
         @if (!string.IsNullOrEmpty(Error))
         {
-            <MudAlert Severity="Severity.Error" Dense="true">@Error</MudAlert>
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mb-2">@Error</MudAlert>
         }
         @if (!string.IsNullOrEmpty(Notice))
         {
-            <MudAlert Severity="Severity.Info" Dense="true">@Notice</MudAlert>
+            <MudAlert Severity="Severity.Info" Dense="true" Class="mb-2">@Notice</MudAlert>
         }
-        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
-            <MudSelect T="string" Label="Screenshot app" @bind-Value="Platform" Disabled="@(Busy || Rows.Count > 0)" Style="min-width:170px">
-                <MudSelectItem T="string" Value="@EarningsScreenshotSource.Uber">Uber Eats</MudSelectItem>
-                <MudSelectItem T="string" Value="@EarningsScreenshotSource.DoorDash">DoorDash</MudSelectItem>
-            </MudSelect>
-            <MudDatePicker Label="Screenshot date" @bind-Date="Date" Disabled="@(Busy || Rows.Count > 0)" Style="min-width:170px"/>
-        </MudStack>
-        @if (SelectedSource is null)
-        {
-            <MudAlert Severity="Severity.Warning" Dense="true">
-                The matching built-in earnings source is hidden or unavailable. Unhide it under Sources and categories before importing.
-            </MudAlert>
-        }
-        <MudText Typo="Typo.body2">For DoorDash, select the date the dash started. Overnight dashes are supported.</MudText>
-        <input @ref="FileInput" type="file" accept="image/*" multiple disabled="@(Busy || Rows.Count > 0)"/>
-        <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ReadAsync" Disabled="@(Busy || Rows.Count > 0)">Read screenshots</MudButton>
-            <MudButton Variant="Variant.Outlined" OnClick="Reset" Disabled="@Busy">Start over</MudButton>
-        </MudStack>
         @if (Busy)
         {
-            <MudProgressLinear Indeterminate="true" Color="Color.Primary"/>
-            <MudText>Working on this device. Long screenshots may take a few minutes.</MudText>
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-2"/>
+            <MudText Class="mb-2">Working on this device. Long screenshots may take a few minutes.</MudText>
+        }
+    <div @key="(Reviewing ? 2 : Rows.Count > 0 ? 1 : 0)" class="overflow-x-hidden" style="flex:1 1 auto; min-height:0; overflow-y:auto;">
+    <MudStack Spacing="3">
+        @if (Rows.Count == 0)
+        {
+            <MudText Typo="Typo.body2">Images are read on this device. Choose screenshots from the same date and app; review every amount and assignment before saving.</MudText>
+            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
+                <MudSelect T="string" Label="Screenshot app" @bind-Value="Platform" Disabled="@Busy" Style="min-width:170px">
+                    <MudSelectItem T="string" Value="@EarningsScreenshotSource.Uber">Uber Eats</MudSelectItem>
+                    <MudSelectItem T="string" Value="@EarningsScreenshotSource.DoorDash">DoorDash</MudSelectItem>
+                </MudSelect>
+                <MudDatePicker Label="Screenshot date" @bind-Date="Date" Disabled="@Busy" Style="min-width:170px"/>
+            </MudStack>
+            @if (SelectedSource is null)
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true">
+                    The matching built-in earnings source is hidden or unavailable. Unhide it under Sources and categories before importing.
+                </MudAlert>
+            }
+            <MudText Typo="Typo.body2">For DoorDash, select the date the dash started. Overnight dashes are supported.</MudText>
+            <input @key="FileInputKey" @ref="FileInput" class="mud-width-full" type="file"
+                   accept="image/*" multiple disabled="@Busy" aria-label="Choose screenshots"/>
         }
         @if (ReadResults.Count > 0)
         {
@@ -46,7 +47,7 @@
                 <summary>Show screenshots for comparison</summary>
                 @foreach (var result in ReadResults)
                 {
-                    <MudText Typo="Typo.subtitle2">@result.Name</MudText>
+                    <MudText Typo="Typo.subtitle2" Class="mud-typography-nowrap" title="@result.Name">@result.Name</MudText>
                     <div style="max-height:30rem; overflow:auto">
                         <img src="@result.Url" alt="@result.Name" style="max-width:100%; height:auto"/>
                     </div>
@@ -56,7 +57,7 @@
                 <summary>Show recognized text</summary>
                 @foreach (var result in ReadResults)
                 {
-                    <MudText Typo="Typo.subtitle2">@result.Name</MudText>
+                    <MudText Typo="Typo.subtitle2" Class="mud-typography-nowrap" title="@result.Name">@result.Name</MudText>
                     <pre style="white-space:pre-wrap; max-height:18rem; overflow:auto">@result.Text</pre>
                 }
             </details>
@@ -73,7 +74,7 @@
             {
                 <MudPaper Class="pa-3" Outlined="true" @key="row">
                     <MudStack Spacing="2">
-                        <MudText Typo="Typo.subtitle2">@row.FileName</MudText>
+                        <MudText Typo="Typo.subtitle2" Class="mud-typography-nowrap" title="@row.FileName">@row.FileName</MudText>
                         <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
                             <MudNumericField T="decimal?" Label="Amount" @bind-Value="row.Amount" Min="0m" HideSpinButtons="true" Style="min-width:110px"/>
                             <MudTimePicker Label="@(Platform == EarningsScreenshotSource.Uber ? "Activity time" : "Dash start")" Time="row.Start" TimeChanged="value => ChangeStart(row, value)" AmPm="true" Style="min-width:150px"/>
@@ -94,10 +95,6 @@
                     </MudStack>
                 </MudPaper>
             }
-            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
-                <MudButton Variant="Variant.Outlined" OnClick="AddRow">Add missing row</MudButton>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Prepare">Review session totals</MudButton>
-            </MudStack>
         }
         @if (Reviewing)
         {
@@ -118,7 +115,7 @@
                     }
                     else
                     {
-                        <MudSelect T="string" Label="Action" @bind-Value="proposal.Action">
+                        <MudSelect T="string" Label="Action" @bind-Value="proposal.Action" Disabled="@Busy">
                             <MudSelectItem T="string" Value="@("Skip")">Skip</MudSelectItem>
                             <MudSelectItem T="string" Value="@("Add")">Add to existing earnings</MudSelectItem>
                             <MudSelectItem T="string" Value="@("Replace")">Replace existing source earnings</MudSelectItem>
@@ -126,10 +123,28 @@
                     }
                 </MudPaper>
             }
-            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2">
-                <MudButton Variant="Variant.Outlined" OnClick="BackToRows" Disabled="@Busy">Back to rows</MudButton>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="@Busy">Save selected actions</MudButton>
-            </MudStack>
         }
     </MudStack>
-</MudPaper>
+    </div>
+    </DialogContent>
+    <DialogActions>
+        <div class="d-flex flex-wrap justify-end gap-2 mud-width-full">
+            <MudButton OnClick="CloseAsync" Disabled="@Busy">Close</MudButton>
+            <MudButton Variant="Variant.Outlined" OnClick="Reset" Disabled="@Busy">Start over</MudButton>
+            @if (Reviewing)
+            {
+                <MudButton Variant="Variant.Outlined" OnClick="BackToRows" Disabled="@Busy">Back to rows</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="@Busy">Save selected actions</MudButton>
+            }
+            else if (Rows.Count > 0)
+            {
+                <MudButton Variant="Variant.Outlined" OnClick="AddRow" Disabled="@Busy">Add missing row</MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Prepare" Disabled="@Busy">Review session totals</MudButton>
+            }
+            else
+            {
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ReadAsync" Disabled="@Busy">Read screenshots</MudButton>
+            }
+        </div>
+    </DialogActions>
+</MudDialog>
