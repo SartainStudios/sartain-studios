@@ -393,15 +393,53 @@ public sealed class GigSessionServiceTests
     }
 
     [Theory]
-    [InlineData(0)]
+    [InlineData(-1)]
     [InlineData(53)]
+    [InlineData(int.MinValue)]
+    [InlineData(int.MaxValue)]
     public async Task ReportAsync_RejectsOutOfRangeWeeks(int weeks)
     {
         var fixture = CreateFixture();
 
         var result = await fixture.Reports.GetAsync(weeks, null);
 
-        Assert.Equal(GigErrors.WeeksOutOfRange, result.Error);
+        Assert.True(result.IsFailure);
+        var validation = Assert.IsType<ValidationError>(result.Error);
+        Assert.Equal(
+            ["Weeks must be 0 for all time or between 1 and 52."],
+            validation.Errors[GigErrors.WeeksField]);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(52)]
+    public async Task ReportAsync_AcceptsWeekRangeBoundaries(int weeks)
+    {
+        var fixture = CreateFixture();
+
+        var result = await fixture.Reports.GetAsync(weeks, null);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(weeks, result.Value.Weeks.Count);
+    }
+
+    [Fact]
+    public async Task ReportAsync_AllTimeIncludesOlderSessions()
+    {
+        var fixture = CreateFixture();
+        fixture.Harness.GigSessions.Seed(new GigSession
+        {
+            UserId = fixture.UserId,
+            StartTime = Now.AddDays(-400),
+            EndTime = Now.AddDays(-400).AddHours(1),
+            Earnings = [new GigEarningEntry { Amount = 60m }]
+        });
+
+        var result = await fixture.Reports.GetAsync(GigReportRange.AllTime, "UTC");
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value.Weeks.Count > GigErrors.MaximumWeeks);
+        Assert.Equal(60m, result.Value.Weeks.Sum(week => week.Gross));
     }
 
     private static GigSource SeedDefaultSource(Fixture fixture, string name)
