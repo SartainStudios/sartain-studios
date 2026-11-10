@@ -71,6 +71,9 @@ public static class GigErrors
     public static readonly Error WeeksOutOfRange = ValidationError.FromErrors(
         (WeeksField, $"Weeks must be between {MinimumWeeks} and {MaximumWeeks}."));
 
+    public static readonly Error ReportWeeksOutOfRange = ValidationError.FromErrors(
+        (WeeksField, $"Weeks must be {GigReportRange.AllTime} for all time or between {MinimumWeeks} and {MaximumWeeks}."));
+
     public static readonly Error NameRequired = ValidationError.FromErrors(
         (NameField, "Name is required."));
 

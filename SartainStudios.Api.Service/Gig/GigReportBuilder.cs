@@ -14,21 +14,29 @@ public static class GigReportBuilder
     {
         var today = GigCalculator.LocalDate(nowUtc, timeZone);
         var thisWeekStart = GigCalculator.WeekStart(today);
-        var weekCount = Math.Max(weeks, 2);
-        var firstWeekStart = thisWeekStart.AddDays(-7 * (weekCount - 1));
-        var displayStart = thisWeekStart.AddDays(-7 * (weeks - 1));
         var allRows = sessions
             .Where(session => session.EndTime is not null)
             .Select(session => ToRow(session, rate, timeZone))
             .ToList();
+        var displayStart = weeks == GigReportRange.AllTime
+            ? allRows.Where(row => row.Date <= today)
+                .Select(row => GigCalculator.WeekStart(row.Date))
+                .DefaultIfEmpty(thisWeekStart)
+                .Min()
+            : thisWeekStart.AddDays(-7 * (weeks - 1));
+        var firstWeekStart = displayStart < thisWeekStart.AddDays(-7)
+            ? displayStart
+            : thisWeekStart.AddDays(-7);
+        var weekCount = (thisWeekStart.DayNumber - firstWeekStart.DayNumber) / 7 + 1;
         var rows = allRows
             .Where(row => row.Date >= firstWeekStart && row.Date <= today)
             .ToList();
+        var rowsByWeek = rows.ToLookup(row => GigCalculator.WeekStart(row.Date));
         var summaries = Enumerable.Range(0, weekCount)
             .Select(index => firstWeekStart.AddDays(7 * index))
             .Select(weekStart => Summarize(
                 weekStart,
-                rows.Where(row => GigCalculator.WeekStart(row.Date) == weekStart).ToList(),
+                rowsByWeek[weekStart].ToList(),
                 rate))
             .ToList();
         var displayRows = rows.Where(row => row.Date >= displayStart).ToList();
