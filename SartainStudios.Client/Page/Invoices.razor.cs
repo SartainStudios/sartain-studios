@@ -5,8 +5,6 @@ using Microsoft.JSInterop;
 using MudBlazor;
 using SartainStudios.Schema.Invoice;
 using SartainStudios.Schema.Membership;
-using BillingContractService = SartainStudios.Client.Service.BillingContract;
-using BillingSummary = SartainStudios.Schema.Billing.Summary;
 using CreateRequest = SartainStudios.Schema.Invoice.CreateRequest;
 using EditRequest = SartainStudios.Schema.Invoice.EditRequest;
 using InvoiceDetail = SartainStudios.Schema.Invoice.Detail;
@@ -18,13 +16,11 @@ namespace SartainStudios.Client.Page;
 
 public sealed partial class Invoices(
     InvoiceService invoiceService,
-    BillingContractService billingContractService,
     AuthenticationStateProvider authenticationStateProvider,
     IJSRuntime jsRuntime,
     NavigationManager navigationManager,
     ISnackbar snackbar)
 {
-    private static readonly TimeSpan AutoSelectGapThreshold = TimeSpan.FromHours(24);
     private TaskCompletionSource<bool>? _confirmCompletion;
     private bool _createRequestHandled;
     private bool _initialParametersHandled;
@@ -44,7 +40,6 @@ public sealed partial class Invoices(
 
     private List<Summary>? InvoiceSummaries { get; set; }
     private List<Summary>? FilteredInvoiceSummaries { get; set; }
-    private List<BillingSummary>? Contracts { get; set; }
     private List<SelectableSession>? SelectableSessions { get; set; }
     private InvoiceDetail? SelectedInvoice { get; set; }
     private HashSet<string> SelectedSessionIds { get; set; } = [];
@@ -62,9 +57,8 @@ public sealed partial class Invoices(
         }
     } = Lifecycle.AnyStatus;
 
-    private string SelectedContractId { get; set; } = string.Empty;
     private string NewStatus { get; set; } = string.Empty;
-    private DateTime? DueDate { get; set; } = CalculateDefaultDueDate(DateTime.Today);
+    private DateTime? DueDate { get; set; }
     private string? ErrorMessage { get; set; }
     private bool IsBusy { get; set; }
     private bool IsLoading { get; set; }
@@ -73,6 +67,7 @@ public sealed partial class Invoices(
     private bool IsPreviewing { get; set; }
     private bool IsSending { get; set; }
     private bool IsEditMode { get; set; }
+    private bool ShowCreate { get; set; }
     private IReadOnlyList<string> AllowedTransitions { get; set; } = [];
 
     private bool ShowConfirm { get; set; }
@@ -89,25 +84,15 @@ public sealed partial class Invoices(
                                   StringComparison.OrdinalIgnoreCase);
 
     private bool IsDetailView => !string.IsNullOrWhiteSpace(Id);
-    private bool IsCreateView => !IsDetailView && CreateRequested && CanManage;
-
-    private BillingSummary? SelectedContract =>
-        Contracts?.FirstOrDefault(c => c.Id == SelectedContractId);
-
     private int SelectedTotalMinutes =>
         SelectableSessions?
             .Where(s => SelectedSessionIds.Contains(s.SessionId))
             .Sum(s => s.MinutesWorked) ?? 0;
 
-    private decimal EstimatedTotal =>
-        SelectedContract is null
-            ? 0m
-            : Math.Round(SelectedContract.HourlyRate * SelectedTotalMinutes / 60m, 2, MidpointRounding.AwayFromZero);
-
     protected override async Task OnInitializedAsync()
     {
         var stateTask = authenticationStateProvider.GetAuthenticationStateAsync();
-        var listTask = IsDetailView || CreateRequested ? null : invoiceService.ListAsync();
+        var listTask = IsDetailView ? null : invoiceService.ListAsync();
         var invoiceTask = IsDetailView ? invoiceService.GetAsync(Id!) : null;
 
         var state = await stateTask;
@@ -115,22 +100,18 @@ public sealed partial class Invoices(
         _lastId = Id;
         IsEditMode = IsDetailView && EditRequested && CanManage;
         _createRequestHandled = CreateRequested && !IsDetailView && CanManage;
+        ShowCreate = _createRequestHandled;
 
         if (invoiceTask is not null)
             await LoadInvoiceAsync(invoiceTask);
         else if (listTask is not null)
             await LoadListAsync(listTask);
-        else if (IsCreateView)
-            await LoadCreateContractsAsync();
         else
             await LoadListAsync();
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        if (!CanManage)
-            CreateRequested = false;
-
         if (!_initialParametersHandled)
         {
             _initialParametersHandled = true;
@@ -140,9 +121,9 @@ public sealed partial class Invoices(
         if (CreateRequested && !_createRequestHandled && !IsDetailView && CanManage)
         {
             _createRequestHandled = true;
-            await LoadCreateContractsAsync();
+            ShowCreate = true;
         }
-        else if (!CreateRequested)
+        else if (!CreateRequested || IsDetailView)
         {
             _createRequestHandled = false;
         }
@@ -157,16 +138,14 @@ public sealed partial class Invoices(
             ErrorMessage = null;
             if (IsDetailView)
             {
+                ShowCreate = false;
                 await LoadInvoiceAsync();
             }
             else
             {
                 SelectedInvoice = null;
                 ClearEditState();
-                if (IsCreateView)
-                    await LoadCreateContractsAsync();
-                else
-                    await LoadListAsync();
+                await LoadListAsync();
             }
         }
 
@@ -265,55 +244,6 @@ public sealed partial class Invoices(
         }
     }
 
-    private async Task LoadCreateContractsAsync()
-    {
-        ErrorMessage = null;
-        ResetCreateState();
-        try
-        {
-            var all = await billingContractService.ListAsync();
-            Contracts = all.Where(c => c.IsActive).ToList();
-            if (Contracts.Count == 1)
-            {
-                SelectedContractId = Contracts[0].Id;
-                StateHasChanged();
-                await LoadCreateSessionsAsync();
-            }
-        }
-        catch (Exception ex)
-        {
-            snackbar.Add(ex.Message, Severity.Error);
-            ErrorMessage = ex.Message;
-            Contracts = [];
-        }
-    }
-
-    private async Task LoadCreateSessionsAsync()
-    {
-        if (string.IsNullOrWhiteSpace(SelectedContractId))
-            return;
-        ErrorMessage = null;
-        IsLoadingSessions = true;
-        SelectableSessions = null;
-        SelectedSessionIds.Clear();
-        try
-        {
-            var sessions = await invoiceService.GetSelectableSessionsAsync(SelectedContractId);
-            SelectableSessions = sessions.ToList();
-            AutoSelectRecentSessions();
-        }
-        catch (Exception ex)
-        {
-            snackbar.Add(ex.Message, Severity.Error);
-            ErrorMessage = ex.Message;
-            SelectableSessions = [];
-        }
-        finally
-        {
-            IsLoadingSessions = false;
-        }
-    }
-
     private async Task LoadEditableSessionsAsync()
     {
         if (string.IsNullOrWhiteSpace(Id) || SelectedInvoice is null)
@@ -385,16 +315,14 @@ public sealed partial class Invoices(
         return Lifecycle.IsDraft(status);
     }
 
-    private async Task GenerateAsync()
+    private async Task GenerateAsync(CreateRequest request)
     {
-        if (string.IsNullOrWhiteSpace(SelectedContractId) || SelectedSessionIds.Count == 0 || DueDate is null) return;
         IsBusy = true;
         try
         {
             snackbar.Add("Generating invoice...", Severity.Info);
-            var dueDateUtc = DateTime.SpecifyKind(DueDate.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
-            var request = new CreateRequest(SelectedContractId, SelectedSessionIds.ToList(), dueDateUtc);
             var invoice = await invoiceService.GenerateAsync(request);
+            ShowCreate = false;
             snackbar.Add("Invoice generated.", Severity.Success);
             navigationManager.NavigateTo(Metadata.Invoice.Detail(invoice.Id));
         }
@@ -636,12 +564,15 @@ public sealed partial class Invoices(
 
     private void OpenCreate()
     {
-        navigationManager.NavigateTo($"{Metadata.Invoice.Route}?new=true");
+        ShowCreate = true;
     }
 
-    private void CloseCreate()
+    private void OnCreateVisibleChanged(bool visible)
     {
-        navigationManager.NavigateTo(Metadata.Invoice.Route);
+        if (IsBusy) return;
+        ShowCreate = visible;
+        if (!visible && CreateRequested && !IsDetailView)
+            navigationManager.NavigateTo(Metadata.Invoice.Route, replace: true);
     }
 
     private void ToggleSession(string sessionId, bool selected)
@@ -663,19 +594,6 @@ public sealed partial class Invoices(
         SelectedSessionIds.Clear();
     }
 
-    private void AutoSelectRecentSessions()
-    {
-        SelectedSessionIds.Clear();
-        if (SelectableSessions is null || SelectableSessions.Count == 0) return;
-        for (var i = 0; i < SelectableSessions.Count; i++)
-        {
-            SelectedSessionIds.Add(SelectableSessions[i].SessionId);
-            if (i == SelectableSessions.Count - 1) break;
-            var gap = SelectableSessions[i + 1].StartTime - SelectableSessions[i].EndTime;
-            if (gap > AutoSelectGapThreshold) break;
-        }
-    }
-
     private static string FormatHours(int minutes)
     {
         var hours = Math.Round(minutes / 60m, 2, MidpointRounding.AwayFromZero);
@@ -687,23 +605,6 @@ public sealed partial class Invoices(
         var hours = minutes / 60;
         var mins = minutes % 60;
         return hours > 0 ? $"{hours}h {mins}m" : $"{mins}m";
-    }
-
-    private static DateTime CalculateDefaultDueDate(DateTime currentDate)
-    {
-        var daysUntilNextMonday = ((int)DayOfWeek.Monday - (int)currentDate.DayOfWeek + 7) % 7;
-        if (daysUntilNextMonday == 0)
-            daysUntilNextMonday = 7;
-        return currentDate.Date.AddDays(daysUntilNextMonday + 7);
-    }
-
-    private void ResetCreateState()
-    {
-        Contracts = null;
-        SelectableSessions = null;
-        SelectedSessionIds.Clear();
-        SelectedContractId = string.Empty;
-        DueDate = CalculateDefaultDueDate(DateTime.Today);
     }
 
     private void ClearEditState()
